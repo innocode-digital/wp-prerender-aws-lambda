@@ -18,5 +18,12 @@ To star render content by AWS Lambda add hook:
 ````
 add_filter( 'wp_ssr_enable_prerender', function () {
     return true;
-}
+} );
+````
+
+To change element ID to be rendered via AWS Lambda, default is `app`:
+````
+add_filter( 'wp_ssr_element_id', function () {
+    return 'YOUR_ELEMENT_ID';
+} );
 ````

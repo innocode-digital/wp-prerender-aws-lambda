@@ -3,8 +3,8 @@
 namespace Innocode\SSR;
 
 use Aws\Lambda\LambdaClient;
-use WP_Http;
 use WP_Error;
+use WP_Http;
 
 /**
  * Class Render
@@ -21,7 +21,17 @@ final class Render
     /**
      * WP hook to render post content
      */
-    private const RENDER_HOOK = 'render_post_content';
+    private const RENDER_HOOK = 'wp_ssr_render_post_content';
+
+    /**
+     * Element ID to be rendered via AWS Lambda
+     */
+    private const ELEMENT = 'app';
+
+    /**
+     * WP hook to change Element ID
+     */
+    private const ELEMENT_HOOK = 'wp_ssr_element_id';
 
     /**
      * Bind post content render with hooks
@@ -67,7 +77,8 @@ final class Render
                 'post_id'       => $post_id,
                 'post_url'      => get_permalink( $post_id ),
                 'return_url'    => Rest::get_return_url(),
-                'secret'        => Security::get_secret_hash()
+                'secret'        => Security::get_secret_hash(),
+                'element'       => apply_filters( static::ELEMENT_HOOK, static::ELEMENT )
             ]
         );
     }
