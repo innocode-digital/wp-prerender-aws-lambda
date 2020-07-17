@@ -1,0 +1,11 @@
+# Dependency directories
+vendor/
+
+# dotenv environment variables file
+.env
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/

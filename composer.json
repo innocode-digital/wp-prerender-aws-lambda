@@ -1,0 +1,26 @@
+{
+    "name": "innocode-digital/wp-ssr",
+    "type": "wordpress-plugin",
+    "description": "WordPress plugin for generating pages/posts HTML via AWS Lambda.",
+    "license": "GPL-2.0+",
+    "keywords": [
+        "wordpress",
+        "plugins",
+        "ssr"
+    ],
+    "authors": [
+        {
+            "name": "Innocode",
+            "email": "post@innocode.no",
+            "homepage": "https://innocode.com/"
+        },
+        {
+            "name": "Oleksandr Zhyian",
+            "email": "zhiyan.olexandr@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.",
+        "aws/aws-sdk-php": "3.140"
+    }
+}
