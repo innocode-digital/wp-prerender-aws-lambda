@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP SSR AWS Lambda
  * Description: Generates HTML for WordPress pages/posts via AWS Lambda
- * Version: 0.0.1
+ * Version: 0.1.0
  * Author: Innocode
  * Author URI: https://innocode.com
  * Requires at least: 5.3.2
