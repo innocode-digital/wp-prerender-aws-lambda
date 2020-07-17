@@ -24,14 +24,14 @@ final class Render
     private const RENDER_HOOK = 'wp_ssr_render_post_content';
 
     /**
-     * Element ID to be rendered via AWS Lambda
+     * Element to be rendered via AWS Lambda
      */
-    private const ELEMENT = 'app';
+    private const ELEMENT = '#app';
 
     /**
-     * WP hook to change Element ID
+     * WP hook to change element
      */
-    private const ELEMENT_HOOK = 'wp_ssr_element_id';
+    private const ELEMENT_HOOK = 'wp_ssr_element';
 
     /**
      * Bind post content render with hooks
