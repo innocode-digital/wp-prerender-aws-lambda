@@ -32,7 +32,7 @@ final class Post
      *
      * @param $post_id
      */
-    public static function detele_prerender_meta( $post_id ): void
+    public static function delete_prerender_meta( $post_id ): void
     {
         delete_post_meta( $post_id, static::POST_META );
     }

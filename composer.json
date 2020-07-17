@@ -20,7 +20,13 @@
         }
     ],
     "require": {
-        "php": ">=7.",
+        "php": ">=7.1",
+        "ext-json": "*",
         "aws/aws-sdk-php": "3.140"
+    },
+    "autoload": {
+        "psr-4": {
+            "Innocode\\SSR\\": "src/"
+        }
     }
 }

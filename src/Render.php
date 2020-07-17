@@ -50,6 +50,7 @@ final class Render
             return;
         }
 
+        Post::delete_prerender_meta( $post_id );
         wp_schedule_single_event( time(), static::RENDER_HOOK );
     }
 
@@ -59,17 +60,6 @@ final class Render
      * @param int $post_id
      */
     public static function post_render( int $post_id ): void
-    {
-        Post::detele_prerender_meta( $post_id );
-        static::run_aws_lambda_render( $post_id );
-    }
-
-    /**
-     * Prepare to run AWS Lambda function
-     *
-     * @param int $post_id
-     */
-    private static function run_aws_lambda_render( int $post_id ): void
     {
         static::run_lambda(
             static::get_lambda_client(),

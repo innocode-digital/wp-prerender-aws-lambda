@@ -20,7 +20,7 @@ final class Security
     private const TRANSIENT = 'wp_ssr_secret';
 
     /**
-     * Generate and return secret. Update it every day
+     * Generate and return secret. Update it every 15 minutes
      *
      * @return string
      */
@@ -28,7 +28,7 @@ final class Security
     {
         if( false === $secret = get_transient( static::TRANSIENT ) ) {
             $secret = wp_generate_password( static::SECRET_LENGTH );
-            set_transient( static::TRANSIENT, $secret, DAY_IN_SECONDS );
+            set_transient( static::TRANSIENT, $secret, 15 * MINUTE_IN_SECONDS );
         }
 
         return $secret;

@@ -9,3 +9,13 @@ vendor/
 
 # IDE
 .idea/
+
+# Lock file because it's a plugin
+composer.lock
+
+# Logs
+logs
+*.log
+
+# Cache
+.cache

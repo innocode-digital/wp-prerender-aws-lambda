@@ -14,16 +14,9 @@
 define( 'WP_SSR_VERSION', '0.0.1' );
 
 if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
-    // Loading composer packages
     require_once __DIR__ . '/vendor/autoload.php';
+}
 
-    // Loading plugin files
-    require_once __DIR__ . '/src/class-plugin.php';
-    require_once __DIR__ . '/src/class-post.php';
-    require_once __DIR__ . '/src/class-render.php';
-    require_once __DIR__ . '/src/class-rest.php';
-    require_once __DIR__ . '/src/class-security.php';
-
-    // initialization of plugin classes
+if( class_exists( 'Innocode\SSR\Plugin' ) ) {
     Innocode\SSR\Plugin::register();
 }
