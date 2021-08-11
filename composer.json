@@ -23,7 +23,7 @@
     "require": {
         "php": ">=7.1",
         "ext-json": "*",
-        "aws/aws-sdk-php": "3.140"
+        "aws/aws-sdk-php": "^3.14"
     },
     "autoload": {
         "psr-4": {
