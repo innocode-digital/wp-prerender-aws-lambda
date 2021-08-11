@@ -61,7 +61,7 @@ final class Render
         }
 
         Post::delete_prerender_meta( $post_id );
-        wp_schedule_single_event( time(), static::RENDER_HOOK );
+        wp_schedule_single_event( time(), static::RENDER_HOOK, [ $post_id] );
     }
 
     /**
