@@ -7,7 +7,7 @@ namespace Innocode\SSR;
  *
  * @package InnocodeWP\SSR
  */
-final class Security
+class Security
 {
     /**
      * Length of the plugin secret

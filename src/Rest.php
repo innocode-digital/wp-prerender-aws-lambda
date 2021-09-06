@@ -13,7 +13,7 @@ use WP_REST_Server;
  *
  * @package InnocodeWP\SSR
  */
-final class Rest
+class Rest
 {
     /**
      * REST namespace
@@ -43,30 +43,41 @@ final class Rest
             static::ROUTE,
             [
                 'methods'               => WP_REST_Server::CREATABLE,
-                'callback'              => [ get_called_class(), 'save_post_content' ],
+                'callback'              => [ get_called_class(), 'save_prerender_content' ],
                 'permission_callback'   => [ get_called_class(), 'check_permissions' ],
                 'args'                  => [
-                    'post_id'           => [
+                    'type'      => [
                         'required'          => true,
-                        'description'       => __( 'Post ID', 'innocode-wp-ssr' ),
-                        'type'              => 'integer',
-                        'validate_callback' => function ( $post_id ) {
-                            return ! is_null( get_post( $post_id ) );
+                        'description'       => __( 'Type', 'innocode-wp-ssr' ),
+                        'validate_callback' => function ( $type ) {
+                            return is_string( $type );
                         },
-                        'sanitize_callback' => function ( $post_id ) {
-                            return absint( $post_id );
+                        'sanitize_callback' => function ( $type ) {
+                            return esc_attr( $type );
                         }
                     ],
-                    'content'           => [
+                    'post_id'   => [
                         'required'          => true,
-                        'description'       => __( 'Post content', 'innocode-wp-ssr' ),
+                        'description'       => __( 'ID', 'innocode-wp-ssr' ),
+                        'type'              => 'string',
+                        'validate_callback' => function ( $id ) {
+                            return ! is_null( $id );
+                        },
+                        'sanitize_callback' => function ( $id ) {
+                            return esc_attr( $_id );
+                        }
+                    ],
+                    'content'   => [
+                        'required'          => true,
+                        'description'       => __( 'Content', 'innocode-wp-ssr' ),
                         'type'              => 'string',
                         'sanitize_callback' => function ( $content ) {
                             return esc_html( $content );
                         }
                     ],
-                    'secret'            => [
+                    'secret'    => [
                         'required'          => true,
+                        'description'       => __( 'Secret', 'innocode-wp-ssr' ),
                         'validate_callback' => function ( $secret ) {
                             return is_string( $secret );
                         },
@@ -77,18 +88,35 @@ final class Rest
     }
 
     /**
-     * Save rendered post content
+     * Save rendered content
      *
      * @param \WP_REST_Request $request
      *
      * @return \WP_REST_Response
      */
-    public static function save_post_content( WP_REST_Request $request ): WP_REST_Response
+    public static function save_prerender_content( WP_REST_Request $request ): WP_REST_Response
     {
-        $is_meta_updated = Post::save_prerender_meta(
-            $request->get_param( 'post_id' ),
-            $request->get_param( 'content' )
-        );
+        $id = $request->get_param( 'id' );
+        $content = $request->get_param( 'content' );
+
+        switch( $type = $request->get_param( 'type' ) ) {
+            case 'archive':
+                $is_meta_updated = Archive::save_prerender_option( $id, $content );
+
+                break;
+            case 'term':
+                $is_meta_updated = Term::save_prerender_meta( absint( $id ), $content );
+
+                break;
+            case 'post':
+                $is_meta_updated = Post::save_prerender_meta( absint( $id ), $content );
+
+                break;
+            default:
+                $is_meta_updated = false;
+
+                break;
+        }
 
         return new WP_REST_Response(
             $is_meta_updated,

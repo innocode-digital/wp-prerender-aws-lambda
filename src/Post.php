@@ -7,7 +7,7 @@ namespace Innocode\SSR;
  *
  * @package InnocodeWP\SSR
  */
-final class Post
+class Post
 {
     /**
      * Name of plugin post meta
@@ -22,18 +22,18 @@ final class Post
      *
      * @return bool
      */
-    public static function save_prerender_meta( $post_id, $content ): bool
+    public static function save_prerender_meta( int $post_id, string $content ): bool
     {
         return (bool) update_post_meta( $post_id, static::POST_META, $content );
     }
 
     /**
-     * Remove plugin post meta with rendered content
+     * Flush plugin post meta with rendered content
      *
      * @param $post_id
      */
-    public static function delete_prerender_meta( $post_id ): void
+    public static function flush_prerender_meta( int $post_id ): void
     {
-        delete_post_meta( $post_id, static::POST_META );
+        static::save_prerender_meta( $post_id, '' );
     }
 }

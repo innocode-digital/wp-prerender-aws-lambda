@@ -7,7 +7,7 @@ namespace Innocode\SSR;
  *
  * @package InnocodeWP\SSR
  */
-final class Plugin
+class Plugin
 {
     /**
      * Hook that activates the plugin

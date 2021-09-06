@@ -11,7 +11,7 @@ use WP_Http;
  *
  * @package InnocodeWP\SSR
  */
-final class Render
+class Render
 {
     /**
      * AWS Lambda function name
@@ -21,7 +21,17 @@ final class Render
     /**
      * WP hook to render post content
      */
-    private const RENDER_HOOK = 'wp_ssr_render_post_content';
+    private const POST_RENDER_HOOK = 'wp_ssr_render_post_content';
+
+    /**
+     * WP hook to render archive content
+     */
+    private const ARCHIVE_RENDER_HOOK = 'wp_ssr_render_archive_content';
+
+    /**
+     * WP hook to render archive content
+     */
+    private const TERM_RENDER_HOOK = 'wp_ssr_render_term_content';
 
     /**
      * Element to be rendered via AWS Lambda
@@ -39,7 +49,9 @@ final class Render
     public static function register()
     {
         add_action( 'save_post', [ get_called_class(), 'schedule_post_render' ] );
-        add_action( static::RENDER_HOOK, [ get_called_class(), 'post_render' ] );
+        add_action( static::ARCHIVE_RENDER_HOOK, [ get_called_class(), 'archive_render' ] );
+        add_action( static::POST_RENDER_HOOK, [ get_called_class(), 'post_render' ] );
+        add_action( static::TERM_RENDER_HOOK, [ get_called_class(), 'term_render' ] );
     }
 
     /**
@@ -60,8 +72,67 @@ final class Render
             return;
         }
 
-        Post::delete_prerender_meta( $post_id );
-        wp_schedule_single_event( time(), static::RENDER_HOOK, [ $post_id] );
+        // Prerender post content
+        Post::flush_prerender_meta( $post_id );
+        wp_schedule_single_event( time(), static::POST_RENDER_HOOK, [ $post_id] );
+
+        //Prerender post archive content
+        if( $link = get_post_type_archive_link( $post_type = get_post_type( $post_id ) ) ) {
+            if( Archive::is_post_showed_in_archive( $post_id, $post_type ) ) {
+                Archive::flush_prerender_option( $post_type );
+                wp_schedule_single_event( time(), static::ARCHIVE_RENDER_HOOK, [ $post_type, $link ] );
+            }
+        }
+
+        //Prerender post terms content
+        global $wp_taxonomies;
+
+        foreach( get_post_taxonomies( $post_id ) as $taxonomy ) {
+            if(
+                $wp_taxonomies[ $taxonomy ]->public === true
+                && $wp_taxonomies[ $taxonomy ]->show_ui === true
+            )
+            {
+                $post_terms = get_the_terms( $post_id, $taxonomy );
+
+                foreach( $post_terms as $term ) {
+                    if( Term::is_post_showed_in_term( $post_id, $term->term_id ) ) {
+                        Term::flush_prerender_meta( $term->term_id );
+                        wp_schedule_single_event( time(), static::TERM_RENDER_HOOK, [ $term->term_id, $taxonomy ] );
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Render archive content
+     */
+    public static function archive_render( string $post_type, string $archive_url ): void
+    {
+        static::render_with_lambda( [
+            'type'          => 'archive',
+            'id'            => $post_type,
+            'url'           => $archive_url,
+            'return_url'    => Rest::get_return_url(),
+            'secret'        => Security::get_secret_hash(),
+            'element'       => apply_filters( static::ELEMENT_HOOK, static::ELEMENT )
+        ] );
+    }
+
+    /**
+     * Render archive content
+     */
+    public static function term_render( int $term_id, string $taxonomy ): void
+    {
+        static::render_with_lambda( [
+            'type'          => 'term',
+            'id'            => $term_id,
+            'url'           => get_term_link( $term_id, $taxonomy ),
+            'return_url'    => Rest::get_return_url(),
+            'secret'        => Security::get_secret_hash(),
+            'element'       => apply_filters( static::ELEMENT_HOOK, static::ELEMENT )
+        ] );
     }
 
     /**
@@ -71,15 +142,26 @@ final class Render
      */
     public static function post_render( int $post_id ): void
     {
+        static::render_with_lambda( [
+            'type'          => 'post',
+            'id'            => $post_id,
+            'url'           => get_permalink( $post_id ),
+            'return_url'    => Rest::get_return_url(),
+            'secret'        => Security::get_secret_hash(),
+            'element'       => apply_filters( static::ELEMENT_HOOK, static::ELEMENT )
+        ] );
+    }
+
+    /**
+     * Render html markup with AWS Lambda function
+     *
+     * @param array $args
+     */
+    public static function render_with_lambda( array $args ): void
+    {
         static::run_lambda(
             static::get_lambda_client(),
-            [
-                'post_id'       => $post_id,
-                'post_url'      => get_permalink( $post_id ),
-                'return_url'    => Rest::get_return_url(),
-                'secret'        => Security::get_secret_hash(),
-                'element'       => apply_filters( static::ELEMENT_HOOK, static::ELEMENT )
-            ]
+            $args
         );
     }
 
