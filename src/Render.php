@@ -49,9 +49,9 @@ class Render
     public static function register()
     {
         add_action( 'save_post', [ get_called_class(), 'schedule_post_render' ] );
-        add_action( static::ARCHIVE_RENDER_HOOK, [ get_called_class(), 'archive_render' ] );
+        add_action( static::ARCHIVE_RENDER_HOOK, [ get_called_class(), 'archive_render' ], 10, 2 );
         add_action( static::POST_RENDER_HOOK, [ get_called_class(), 'post_render' ] );
-        add_action( static::TERM_RENDER_HOOK, [ get_called_class(), 'term_render' ] );
+        add_action( static::TERM_RENDER_HOOK, [ get_called_class(), 'term_render' ], 10, 2 );
     }
 
     /**
