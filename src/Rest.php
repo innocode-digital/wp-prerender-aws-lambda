@@ -56,7 +56,7 @@ class Rest
                             return esc_attr( $type );
                         }
                     ],
-                    'post_id'   => [
+                    'id'   => [
                         'required'          => true,
                         'description'       => __( 'ID', 'innocode-wp-ssr' ),
                         'type'              => 'string',
@@ -64,7 +64,7 @@ class Rest
                             return ! is_null( $id );
                         },
                         'sanitize_callback' => function ( $id ) {
-                            return esc_attr( $_id );
+                            return esc_attr( $id );
                         }
                     ],
                     'content'   => [
