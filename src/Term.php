@@ -17,6 +17,11 @@ class Term
     const TERM_META = 'prerender';
 
     /**
+     * Hook that modify term prerender logic
+     */
+    const SSR_PRERENDER_HOOK = 'wp_ssr_term_prerender';
+
+    /**
      * Save rendered content to plugin term meta
      *
      * @param $post_type
@@ -57,6 +62,6 @@ class Term
             ]
         ] );
 
-        return in_array( $post_id, $query->posts );
+        return apply_filters( static::SSR_PRERENDER_HOOK, in_array( $post_id, $query->posts ), $post_id );
     }
 }

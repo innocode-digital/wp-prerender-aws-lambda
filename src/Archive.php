@@ -17,6 +17,11 @@ class Archive
     const ARCHIVE_OPTION = 'archive_prerender';
 
     /**
+     * Hook that modify archive prerender logic
+     */
+    const SSR_PRERENDER_HOOK = 'wp_ssr_archive_prerender';
+
+    /**
      * Save rendered content to plugin archive option
      *
      * @param $post_type
@@ -52,6 +57,6 @@ class Archive
             'fields'    => 'ids'
         ] );
 
-        return in_array( $post_id, $query->posts );
+        return apply_filters( static::SSR_PRERENDER_HOOK, in_array( $post_id, $query->posts ), $post_id );
     }
 }

@@ -27,3 +27,23 @@ add_filter( 'wp_ssr_element', function () {
     return 'YOUR_ELEMENT';
 } );
 ````
+
+To change the logic (when post is saved) of term prerender, use hook:
+
+````
+add_filter( 'wp_ssr_term_prerender', function ( $prerender, $post_id ): bool {
+    ...
+    
+    return $prerender;
+}, 10, 2 );
+````
+
+To change the logic (when post is saved) of archive prerender, use hook:
+
+````
+add_filter( 'wp_ssr_archive_prerender', function ( $prerender, $post_id ): bool {
+    ...
+    
+    return $prerender;
+}, 10, 2 );
+````
