@@ -75,7 +75,7 @@ class Render
 
         // Prerender post content
         Post::flush_prerender_meta( $post_id );
-        wp_schedule_single_event( time(), static::POST_RENDER_HOOK, [ $post_id] );
+        wp_schedule_single_event( time(), static::POST_RENDER_HOOK, [ $post_id ] );
 
         // Prerender post archive content
         if( $link = get_post_type_archive_link( $post_type = get_post_type( $post_id ) ) ) {
@@ -92,8 +92,7 @@ class Render
             if(
                 $wp_taxonomies[ $taxonomy ]->public === true
                 && $wp_taxonomies[ $taxonomy ]->show_ui === true
-            )
-            {
+            ) {
                 $post_terms = get_the_terms( $post_id, $taxonomy );
 
                 foreach( $post_terms as $term ) {
