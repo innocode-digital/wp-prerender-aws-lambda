@@ -49,13 +49,14 @@ class Render
     public static function register()
     {
         add_action( 'save_post', [ get_called_class(), 'schedule_post_render' ] );
+        add_action( 'saved_term', [ get_called_class(), 'schedule_term_render' ], 10, 3 );
         add_action( static::ARCHIVE_RENDER_HOOK, [ get_called_class(), 'archive_render' ], 10, 2 );
         add_action( static::POST_RENDER_HOOK, [ get_called_class(), 'post_render' ] );
         add_action( static::TERM_RENDER_HOOK, [ get_called_class(), 'term_render' ], 10, 2 );
     }
 
     /**
-     * Schedule to render new post/page HTML content
+     * Schedule to render post/page HTML content
      *
      * @param int $post_id
      */
@@ -76,7 +77,7 @@ class Render
         Post::flush_prerender_meta( $post_id );
         wp_schedule_single_event( time(), static::POST_RENDER_HOOK, [ $post_id] );
 
-        //Prerender post archive content
+        // Prerender post archive content
         if( $link = get_post_type_archive_link( $post_type = get_post_type( $post_id ) ) ) {
             if( Archive::is_post_showed_in_archive( $post_id, $post_type ) ) {
                 Archive::flush_prerender_option( $post_type );
@@ -84,7 +85,7 @@ class Render
             }
         }
 
-        //Prerender post terms content
+        // Prerender post terms content
         global $wp_taxonomies;
 
         foreach( get_post_taxonomies( $post_id ) as $taxonomy ) {
@@ -102,6 +103,23 @@ class Render
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Schedule to render term HTML content
+     *
+     * @param int $term_id
+     * @param int $tax_id
+     * @param string $taxonomy_slug
+     */
+    public static function schedule_term_render( int $term_id, int $tax_id, string $taxonomy_slug ): void
+    {
+        $taxonomy = get_taxonomy( $taxonomy_slug );
+
+        if( $taxonomy && $taxonomy->public ) {
+            Term::flush_prerender_meta( $term_id );
+            wp_schedule_single_event( time(), static::TERM_RENDER_HOOK, [ $term_id, $taxonomy_slug ] );
         }
     }
 
