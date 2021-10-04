@@ -53,6 +53,7 @@ class Term
     public static function is_post_showed_in_term( int $post_id, int $term_id ): bool
     {
         $query = new WP_Query( [
+            'post_type' => get_post_type( $post_id ),
             'fields'    => 'ids',
             'tax_query' => [
                 [
