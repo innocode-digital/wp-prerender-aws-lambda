@@ -1,5 +1,5 @@
 {
-    "name": "innocode-digital/wp-ssr-aws-lambda",
+    "name": "innocode-digital/wp-prerender-aws-lambda",
     "version": "0.1.0",
     "type": "wordpress-plugin",
     "description": "WordPress plugin for generating pages/posts HTML via AWS Lambda.",
@@ -7,7 +7,7 @@
     "keywords": [
         "wordpress",
         "plugins",
-        "ssr"
+        "prerender"
     ],
     "authors": [
         {
@@ -27,7 +27,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Innocode\\SSR\\": "src/"
+            "Innocode\\Prerender\\": "src/"
         }
     }
 }

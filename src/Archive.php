@@ -1,13 +1,13 @@
 <?php
 
-namespace Innocode\SSR;
+namespace Innocode\Prerender;
 
 use WP_Query;
 
 /**
  * Class Archive
  *
- * @package InnocodeWP\SSR
+ * @package InnocodeWP\Prerender
  */
 class Archive
 {
@@ -15,11 +15,6 @@ class Archive
      * Name of plugin archive option
      */
     const ARCHIVE_OPTION = 'archive_prerender';
-
-    /**
-     * Hook that modify archive prerender logic
-     */
-    const SSR_PRERENDER_HOOK = 'wp_ssr_archive_prerender';
 
     /**
      * Save rendered content to plugin archive option
@@ -57,6 +52,6 @@ class Archive
             'fields'    => 'ids'
         ] );
 
-        return apply_filters( static::SSR_PRERENDER_HOOK, in_array( $post_id, $query->posts ), $post_id );
+        return apply_filters( 'wp_archive_prerender', in_array( $post_id, $query->posts ), $post_id );
     }
 }

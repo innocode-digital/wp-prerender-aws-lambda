@@ -1,11 +1,11 @@
 <?php
 
-namespace Innocode\SSR;
+namespace Innocode\Prerender;
 
 /**
  * Class Post
  *
- * @package InnocodeWP\SSR
+ * @package InnocodeWP\Prerender
  */
 class Post
 {

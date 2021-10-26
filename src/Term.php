@@ -1,13 +1,13 @@
 <?php
 
-namespace Innocode\SSR;
+namespace Innocode\Prerender;
 
 use WP_Query;
 
 /**
  * Class Term
  *
- * @package InnocodeWP\SSR
+ * @package InnocodeWP\Prerender
  */
 class Term
 {
@@ -15,11 +15,6 @@ class Term
      * Name of plugin term meta
      */
     const TERM_META = 'prerender';
-
-    /**
-     * Hook that modify term prerender logic
-     */
-    const SSR_PRERENDER_HOOK = 'wp_ssr_term_prerender';
 
     /**
      * Save rendered content to plugin term meta
@@ -63,6 +58,6 @@ class Term
             ]
         ] );
 
-        return apply_filters( static::SSR_PRERENDER_HOOK, in_array( $post_id, $query->posts ), $post_id );
+        return apply_filters( 'wp_term_prerender', in_array( $post_id, $query->posts ), $post_id );
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Innocode\SSR;
+namespace Innocode\Prerender;
 
 use Aws\Lambda\LambdaClient;
 use WP_Error;
@@ -9,7 +9,7 @@ use WP_Http;
 /**
  * Class Render
  *
- * @package InnocodeWP\SSR
+ * @package InnocodeWP\Prerender
  */
 class Render
 {
@@ -19,29 +19,9 @@ class Render
     private const FUNCTION = 'wordpress-prerender';
 
     /**
-     * WP hook to render post content
-     */
-    private const POST_RENDER_HOOK = 'wp_ssr_render_post_content';
-
-    /**
-     * WP hook to render archive content
-     */
-    private const ARCHIVE_RENDER_HOOK = 'wp_ssr_render_archive_content';
-
-    /**
-     * WP hook to render archive content
-     */
-    private const TERM_RENDER_HOOK = 'wp_ssr_render_term_content';
-
-    /**
      * Element to be rendered via AWS Lambda
      */
     private const ELEMENT = '#app';
-
-    /**
-     * WP hook to change element
-     */
-    private const ELEMENT_HOOK = 'wp_ssr_element';
 
     /**
      * Bind post content render with hooks
@@ -50,9 +30,9 @@ class Render
     {
         add_action( 'save_post', [ get_called_class(), 'schedule_post_render' ] );
         add_action( 'saved_term', [ get_called_class(), 'schedule_term_render' ], 10, 3 );
-        add_action( static::ARCHIVE_RENDER_HOOK, [ get_called_class(), 'archive_render' ], 10, 2 );
-        add_action( static::POST_RENDER_HOOK, [ get_called_class(), 'post_render' ] );
-        add_action( static::TERM_RENDER_HOOK, [ get_called_class(), 'term_render' ], 10, 2 );
+        add_action( 'wp_prerender_archive_content', [ get_called_class(), 'archive_render' ], 10, 2 );
+        add_action( 'wp_prerender_post_content', [ get_called_class(), 'post_render' ] );
+        add_action( 'wp_prerender_term_content', [ get_called_class(), 'term_render' ], 10, 2 );
     }
 
     /**
@@ -75,13 +55,13 @@ class Render
 
         // Prerender post content
         Post::flush_prerender_meta( $post_id );
-        wp_schedule_single_event( time(), static::POST_RENDER_HOOK, [ $post_id ] );
+        wp_schedule_single_event( time(), 'wp_prerender_post_content', [ $post_id ] );
 
         // Prerender post archive content
         if( $link = get_post_type_archive_link( $post_type = get_post_type( $post_id ) ) ) {
             if( Archive::is_post_showed_in_archive( $post_id, $post_type ) ) {
                 Archive::flush_prerender_option( $post_type );
-                wp_schedule_single_event( time(), static::ARCHIVE_RENDER_HOOK, [ $post_type, $link ] );
+                wp_schedule_single_event( time(), 'wp_prerender_archive_content', [ $post_type, $link ] );
             }
         }
 
@@ -95,7 +75,7 @@ class Render
                 foreach( $post_terms as $term ) {
                     if( Term::is_post_showed_in_term( $post_id, $term->term_id ) ) {
                         Term::flush_prerender_meta( $term->term_id );
-                        wp_schedule_single_event( time(), static::TERM_RENDER_HOOK, [ $term->term_id, $taxonomy ] );
+                        wp_schedule_single_event( time(), 'wp_prerender_term_content', [ $term->term_id, $taxonomy ] );
                     }
                 }
             }
@@ -115,7 +95,7 @@ class Render
 
         if( $taxonomy && $taxonomy->public ) {
             Term::flush_prerender_meta( $term_id );
-            wp_schedule_single_event( time(), static::TERM_RENDER_HOOK, [ $term_id, $taxonomy_slug ] );
+            wp_schedule_single_event( time(), 'wp_prerender_term_content', [ $term_id, $taxonomy_slug ] );
         }
     }
 
@@ -169,7 +149,7 @@ class Render
             wp_parse_args( $args, [
                 'return_url'    => Rest::get_return_url(),
                 'secret'        => Security::get_secret_hash(),
-                'element'       => apply_filters( static::ELEMENT_HOOK, static::ELEMENT )
+                'element'       => apply_filters( 'wp_prerender_element', static::ELEMENT )
             ] )
         );
     }
@@ -183,10 +163,10 @@ class Render
     {
         return new LambdaClient( [
             'credentials' => [
-                'key'    => defined( 'AWS_LAMBDA_WP_SSR_KEY' ) ? AWS_LAMBDA_WP_SSR_KEY : '',
-                'secret' => defined( 'AWS_LAMBDA_WP_SSR_SECRET' ) ? AWS_LAMBDA_WP_SSR_SECRET : '',
+                'key'    => defined( 'AWS_LAMBDA_WP_PRERENDER_KEY' ) ? AWS_LAMBDA_WP_PRERENDER_KEY : '',
+                'secret' => defined( 'AWS_LAMBDA_WP_PRERENDER_SECRET' ) ? AWS_LAMBDA_WP_PRERENDER_SECRET : '',
             ],
-            'region'      => defined( 'AWS_LAMBDA_WP_SSR_REGION' ) ? AWS_LAMBDA_WP_SSR_REGION : '',
+            'region'      => defined( 'AWS_LAMBDA_WP_PRERENDER_REGION' ) ? AWS_LAMBDA_WP_PRERENDER_REGION : '',
             'version'     => 'latest',
         ] );
     }
@@ -198,8 +178,8 @@ class Render
      */
     private static function get_lambda_function_name(): string
     {
-        return defined( 'AWS_LAMBDA_WP_SSR_FUNCTION' )
-            ? AWS_LAMBDA_WP_SSR_FUNCTION
+        return defined( 'AWS_LAMBDA_WP_PRERENDER_FUNCTION' )
+            ? AWS_LAMBDA_WP_PRERENDER_FUNCTION
             : static::FUNCTION;
     }
 

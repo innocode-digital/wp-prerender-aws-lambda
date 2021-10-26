@@ -1,26 +1,21 @@
 <?php
 
-namespace Innocode\SSR;
+namespace Innocode\Prerender;
 
 /**
  * Class Plugin
  *
- * @package InnocodeWP\SSR
+ * @package InnocodeWP\Prerender
  */
 class Plugin
 {
-    /**
-     * Hook that activates the plugin
-     */
-    private const SSR_HOOK = 'wp_ssr_enable_prerender';
-
     /**
      * Plugin initialization
      */
     public static function register(): void
     {
         add_action( 'init', function() {
-            if( apply_filters( static::SSR_HOOK, false ) ) {
+            if( apply_filters( 'wp_enable_prerender', false ) ) {
                 Render::register();
                 Rest::register();
             }

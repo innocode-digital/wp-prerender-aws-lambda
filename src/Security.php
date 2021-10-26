@@ -1,11 +1,11 @@
 <?php
 
-namespace Innocode\SSR;
+namespace Innocode\Prerender;
 
 /**
  * Class Security
  *
- * @package InnocodeWP\SSR
+ * @package InnocodeWP\Prerender
  */
 class Security
 {
@@ -17,7 +17,7 @@ class Security
     /**
      * Plugin secret transient option name
      */
-    private const TRANSIENT = 'wp_ssr_secret';
+    private const TRANSIENT = 'wp_prerender_secret';
 
     /**
      * Generate and return secret. Update it every 15 minutes

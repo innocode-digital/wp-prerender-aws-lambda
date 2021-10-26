@@ -1,6 +1,6 @@
 <?php
 
-namespace Innocode\SSR;
+namespace Innocode\Prerender;
 
 use WP_Error;
 use WP_Http;
@@ -11,7 +11,7 @@ use WP_REST_Server;
 /**
  * Class Rest
  *
- * @package InnocodeWP\SSR
+ * @package InnocodeWP\Prerender
  */
 class Rest
 {
@@ -23,7 +23,7 @@ class Rest
     /**
      * REST route
      */
-    private const ROUTE = '/ssr';
+    private const ROUTE = '/prerender';
 
     /**
      * Bind functions with WP hooks
@@ -48,7 +48,7 @@ class Rest
                 'args'                  => [
                     'type'      => [
                         'required'          => true,
-                        'description'       => __( 'Type', 'innocode-wp-ssr' ),
+                        'description'       => __( 'Type', 'innocode-wp-prerender' ),
                         'validate_callback' => function ( $type ) {
                             return is_string( $type );
                         },
@@ -58,7 +58,7 @@ class Rest
                     ],
                     'id'   => [
                         'required'          => true,
-                        'description'       => __( 'ID', 'innocode-wp-ssr' ),
+                        'description'       => __( 'ID', 'innocode-wp-prerender' ),
                         'type'              => 'string',
                         'sanitize_callback' => function ( $id ) {
                             return esc_attr( $id );
@@ -66,7 +66,7 @@ class Rest
                     ],
                     'content'   => [
                         'required'          => true,
-                        'description'       => __( 'Content', 'innocode-wp-ssr' ),
+                        'description'       => __( 'Content', 'innocode-wp-prerender' ),
                         'type'              => 'string',
                         'sanitize_callback' => function ( $content ) {
                             return esc_html( $content );
@@ -74,7 +74,7 @@ class Rest
                     ],
                     'secret'    => [
                         'required'          => true,
-                        'description'       => __( 'Secret', 'innocode-wp-ssr' ),
+                        'description'       => __( 'Secret', 'innocode-wp-prerender' ),
                         'validate_callback' => function ( $secret ) {
                             return is_string( $secret );
                         },
