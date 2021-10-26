@@ -60,9 +60,6 @@ class Rest
                         'required'          => true,
                         'description'       => __( 'ID', 'innocode-wp-ssr' ),
                         'type'              => 'string',
-                        'validate_callback' => function ( $id ) {
-                            return ! is_null( $id );
-                        },
                         'sanitize_callback' => function ( $id ) {
                             return esc_attr( $id );
                         }
