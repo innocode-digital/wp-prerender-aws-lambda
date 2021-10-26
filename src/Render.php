@@ -130,10 +130,7 @@ class Render
         static::render_with_lambda( [
             'type'          => 'archive',
             'id'            => $post_type,
-            'url'           => $archive_url,
-            'return_url'    => Rest::get_return_url(),
-            'secret'        => Security::get_secret_hash(),
-            'element'       => apply_filters( static::ELEMENT_HOOK, static::ELEMENT )
+            'url'           => $archive_url
         ] );
     }
 
@@ -145,10 +142,7 @@ class Render
         static::render_with_lambda( [
             'type'          => 'term',
             'id'            => $term_id,
-            'url'           => get_term_link( $term_id, $taxonomy ),
-            'return_url'    => Rest::get_return_url(),
-            'secret'        => Security::get_secret_hash(),
-            'element'       => apply_filters( static::ELEMENT_HOOK, static::ELEMENT )
+            'url'           => get_term_link( $term_id, $taxonomy )
         ] );
     }
 
@@ -162,10 +156,7 @@ class Render
         static::render_with_lambda( [
             'type'          => 'post',
             'id'            => $post_id,
-            'url'           => get_permalink( $post_id ),
-            'return_url'    => Rest::get_return_url(),
-            'secret'        => Security::get_secret_hash(),
-            'element'       => apply_filters( static::ELEMENT_HOOK, static::ELEMENT )
+            'url'           => get_permalink( $post_id )
         ] );
     }
 
@@ -178,7 +169,11 @@ class Render
     {
         static::run_lambda(
             static::get_lambda_client(),
-            $args
+            wp_parse_args( $args, [
+                'return_url'    => Rest::get_return_url(),
+                'secret'        => Security::get_secret_hash(),
+                'element'       => apply_filters( static::ELEMENT_HOOK, static::ELEMENT )
+            ] )
         );
     }
 
