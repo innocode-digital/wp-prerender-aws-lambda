@@ -89,10 +89,7 @@ class Render
         global $wp_taxonomies;
 
         foreach( get_post_taxonomies( $post_id ) as $taxonomy ) {
-            if(
-                $wp_taxonomies[ $taxonomy ]->public === true
-                && $wp_taxonomies[ $taxonomy ]->show_ui === true
-            ) {
+            if( $wp_taxonomies[ $taxonomy ]->public ) {
                 $post_terms = get_the_terms( $post_id, $taxonomy );
 
                 foreach( $post_terms as $term ) {
