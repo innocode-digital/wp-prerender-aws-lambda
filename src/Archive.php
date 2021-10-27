@@ -12,11 +12,6 @@ use WP_Query;
 class Archive
 {
     /**
-     * Name of plugin archive option
-     */
-    const ARCHIVE_OPTION = 'archive_prerender';
-
-    /**
      * Save rendered content to plugin archive option
      *
      * @param $post_type
@@ -26,7 +21,7 @@ class Archive
      */
     public static function save_prerender_option( string $post_type, string $content ): bool
     {
-        return update_option( "{$post_type}_" . static::ARCHIVE_OPTION , $content );
+        return wp_cache_set( "{$post_type}_archive_prerender", $content );
     }
 
     /**
