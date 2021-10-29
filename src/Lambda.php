@@ -24,6 +24,7 @@ class Lambda
 
     /**
      * Lambda constructor.
+     *
      * @param string $key
      * @param string $secret
      * @param string $region

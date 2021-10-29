@@ -10,6 +10,11 @@ namespace Innocode\Prerender;
 class Plugin
 {
     /**
+     * @var DB
+     */
+    private $db;
+
+    /**
      * @var Element
      */
     private $element = '#app';
@@ -33,6 +38,7 @@ class Plugin
     public function __construct( string $key, string $secret, string $region, string $function = null )
     {
         $this->lambda = new Lambda( $key, $secret, $region );
+        $this->db = new Db();
 
         if ( null !== $function ) {
             $this->lambda->set_function( $function );
