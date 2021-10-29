@@ -7,7 +7,7 @@ use WP_Query;
 /**
  * Class Archive
  *
- * @package InnocodeWP\Prerender
+ * @package Innocode\Prerender
  */
 class Archive
 {

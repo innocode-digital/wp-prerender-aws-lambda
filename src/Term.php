@@ -7,7 +7,7 @@ use WP_Query;
 /**
  * Class Term
  *
- * @package InnocodeWP\Prerender
+ * @package Innocode\Prerender
  */
 class Term
 {

@@ -4,47 +4,39 @@ namespace Innocode\Prerender;
 
 use WP_Error;
 use WP_Http;
+use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 
 /**
- * Class Rest
+ * Class RESTController
  *
- * @package InnocodeWP\Prerender
+ * @package Innocode\Prerender
  */
-class Rest
+class RESTController extends WP_REST_Controller
 {
     /**
-     * REST namespace
+     * REST constructor
      */
-    private const NAMESPACE = 'innocode/v1';
-
-    /**
-     * REST route
-     */
-    private const ROUTE = '/prerender';
-
-    /**
-     * Bind functions with WP hooks
-     */
-    public static function register(): void
+    public function __construct()
     {
-        add_action( 'rest_api_init', [ get_called_class(), 'register_rest_route' ] );
+        $this->namespace = 'innocode/v1';
+        $this->rest_base = '/prerender';
     }
 
     /**
      * Register REST route to save rendered content from AWS Lambda
      */
-    public static function register_rest_route(): void
+    public function register_routes(): void
     {
         register_rest_route(
-            static::NAMESPACE,
-            static::ROUTE,
+            $this->namespace,
+            $this->rest_base,
             [
                 'methods'               => WP_REST_Server::CREATABLE,
-                'callback'              => [ get_called_class(), 'save_prerender_content' ],
-                'permission_callback'   => [ get_called_class(), 'check_permissions' ],
+                'callback'              => [ $this, 'save_prerender_content' ],
+                'permission_callback'   => [ $this, 'check_permissions' ],
                 'args'                  => [
                     'type'      => [
                         'required'          => true,
@@ -91,7 +83,7 @@ class Rest
      *
      * @return \WP_REST_Response
      */
-    public static function save_prerender_content( WP_REST_Request $request ): WP_REST_Response
+    public function save_prerender_content( WP_REST_Request $request ): WP_REST_Response
     {
         $id = $request->get_param( 'id' );
         $content = $request->get_param( 'content' );
@@ -128,11 +120,23 @@ class Rest
      *
      * @param \WP_REST_Request $request
      *
-     * @return bool
+     * @return bool|WP_Error
      */
-    public static function check_permissions( WP_REST_Request $request ): bool
+    public function check_permissions( WP_REST_Request $request ): bool
     {
-        return Security::check_secret_hash( $request->get_param( 'secret' ) );
+        $is_secret_valid = (
+            false === ( $secret_hash = get_transient( 'wp_prerender_secret' ) )
+            || ! wp_check_password( $request->get_param( 'secret' ), $secret_hash )
+        );
+
+        return $is_secret_valid
+            ?: new WP_Error(
+                'rest_innocode_aws_lambda_prerender_cannot_save_content',
+                __( 'Sorry, you are not allowed to save prerender content', 'innocode-wp-prerender' ),
+                [
+                    'status' => WP_Http::UNAUTHORIZED,
+                ]
+            );
     }
 
     /**
@@ -140,8 +144,8 @@ class Rest
      *
      * @return string
      */
-    public static function get_return_url(): string
+    public function get_return_url(): string
     {
-        return rest_url( static::NAMESPACE . static::ROUTE );
+        return rest_url( "$this->namespace$this->rest_base" );
     }
 }
