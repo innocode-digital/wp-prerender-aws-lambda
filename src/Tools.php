@@ -5,38 +5,26 @@ namespace Innocode\Prerender;
 use WP_Query;
 
 /**
- * Class Term
+ * Class Tools
  *
  * @package Innocode\Prerender
  */
-class Term
+class Tools
 {
     /**
-     * Name of plugin term meta
-     */
-    const TERM_META = 'prerender';
-
-    /**
-     * Save rendered content to plugin term meta
-     *
+     * @param $post_id
      * @param $post_type
-     * @param $content
      *
      * @return bool
      */
-    public static function save_prerender_meta( int $term_id, string $content ): bool
+    public static function is_post_showed_in_archive( int $post_id, string $post_type ): bool
     {
-        return (bool) update_term_meta( $term_id, static::TERM_META , $content );
-    }
+        $query = new WP_Query( [
+            'post_type' => $post_type,
+            'fields'    => 'ids'
+        ] );
 
-    /**
-     * Flush plugin term meta with rendered content
-     *
-     * @param $term_id
-     */
-    public static function flush_prerender_meta( int $term_id ): void
-    {
-        static::save_prerender_meta( $term_id, '' );
+        return apply_filters( 'wp_archive_prerender', in_array( $post_id, $query->posts ), $post_id );
     }
 
     /**

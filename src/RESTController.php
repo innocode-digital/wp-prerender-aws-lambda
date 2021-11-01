@@ -90,26 +90,26 @@ class RESTController extends WP_REST_Controller
 
         switch( $type = $request->get_param( 'type' ) ) {
             case 'archive':
-                $is_meta_updated = Archive::save_prerender_option( $id, $content );
+                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, 0, "{$id}_archive");
 
                 break;
             case 'term':
-                $is_meta_updated = Term::save_prerender_meta( absint( $id ), $content );
+                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, $id, "term");
 
                 break;
             case 'post':
-                $is_meta_updated = Post::save_prerender_meta( absint( $id ), $content );
+                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, $id, "post");
 
                 break;
             default:
-                $is_meta_updated = false;
+                $is_data_updated = false;
 
                 break;
         }
 
         return new WP_REST_Response(
-            $is_meta_updated,
-            $is_meta_updated
+            $is_data_updated,
+            $is_data_updated
                 ? WP_Http::OK
                 : WP_Http::INTERNAL_SERVER_ERROR
         );
@@ -122,11 +122,11 @@ class RESTController extends WP_REST_Controller
      *
      * @return bool|WP_Error
      */
-    public function check_permissions( WP_REST_Request $request ): bool
+    public function check_permissions( WP_REST_Request $request )
     {
         $is_secret_valid = (
-            false === ( $secret_hash = get_transient( 'wp_prerender_secret' ) )
-            || ! wp_check_password( $request->get_param( 'secret' ), $secret_hash )
+            false !== ( $secret_hash = get_transient( 'wp_prerender_secret' ) )
+            && wp_check_password( $request->get_param( 'secret' ), $secret_hash )
         );
 
         return $is_secret_valid

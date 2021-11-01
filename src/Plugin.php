@@ -50,7 +50,7 @@ class Plugin
     /**
      * @return Lambda
      */
-    public function get_lambda() : Lambda
+    public function get_lambda(): Lambda
     {
         return $this->lambda;
     }
@@ -58,9 +58,17 @@ class Plugin
     /**
      * @return RESTController
      */
-    public function get_rest_controller() : RESTController
+    public function get_rest_controller(): RESTController
     {
         return $this->rest_controller;
+    }
+
+    /**
+     * @return Db
+     */
+    public function get_db(): Db
+    {
+        return $this->db;
     }
 
     public function run()
@@ -99,13 +107,13 @@ class Plugin
         }
 
         // Prerender post content
-        Post::flush_prerender_meta( $post_id );
+        $this->get_db()->clear_entry( $post_id, 'post' );
         wp_schedule_single_event( time(), 'wp_prerender_post_content', [ $post_id ] );
 
         // Prerender post archive content
         if( $link = get_post_type_archive_link( $post_type = get_post_type( $post_id ) ) ) {
-            if( Archive::is_post_showed_in_archive( $post_id, $post_type ) ) {
-                Archive::flush_prerender_option( $post_type );
+            if( Tools::is_post_showed_in_archive( $post_id, $post_type ) ) {
+                $this->get_db()->clear_entry( 0, "{$post_type}_archive" );
                 wp_schedule_single_event( time(), 'wp_prerender_archive_content', [ $post_type, $link ] );
             }
         }
@@ -118,8 +126,8 @@ class Plugin
                 $post_terms = get_the_terms( $post_id, $taxonomy );
 
                 foreach( $post_terms as $term ) {
-                    if( Term::is_post_showed_in_term( $post_id, $term->term_id ) ) {
-                        Term::flush_prerender_meta( $term->term_id );
+                    if( Tools::is_post_showed_in_term( $post_id, $term->term_id ) ) {
+                        $this->get_db()->clear_entry( $term->term_id, 'term' );
                         wp_schedule_single_event( time(), 'wp_prerender_term_content', [ $term->term_id, $taxonomy ] );
                     }
                 }
@@ -139,7 +147,7 @@ class Plugin
         $taxonomy = get_taxonomy( $taxonomy_slug );
 
         if( $taxonomy && $taxonomy->public ) {
-            Term::flush_prerender_meta( $term_id );
+            $this->get_db()->clear_entry( $term->term_id, 'term' );
             wp_schedule_single_event( time(), 'wp_prerender_term_content', [ $term_id, $taxonomy_slug ] );
         }
     }
