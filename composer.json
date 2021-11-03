@@ -1,6 +1,6 @@
 {
     "name": "innocode-digital/wp-prerender-aws-lambda",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "type": "wordpress-plugin",
     "description": "WordPress plugin for generating pages/posts HTML via AWS Lambda.",
     "license": "GPL-2.0+",

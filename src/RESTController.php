@@ -90,15 +90,15 @@ class RESTController extends WP_REST_Controller
 
         switch( $type = $request->get_param( 'type' ) ) {
             case 'archive':
-                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, 0, "{$id}_archive");
+                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, "{$id}_archive" );
 
                 break;
             case 'term':
-                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, $id, "term");
+                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, "term", $id );
 
                 break;
             case 'post':
-                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, $id, "post");
+                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, "post", $id );
 
                 break;
             default:

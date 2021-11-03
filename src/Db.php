@@ -17,7 +17,7 @@ class Db
     /**
      * DB constructor.
      *
-     * @param string $table_name
+     * @param string $table
      */
     public function __construct( string $table = '' )
     {
@@ -53,7 +53,7 @@ class Db
      */
     private function is_table_exists( string $table ): bool
     {
-        return ! ! get_option( "wp_table_$table" );
+        return ( bool ) get_option( "wp_table_$table" );
     }
 
     private function create_table( string $table )
@@ -80,21 +80,17 @@ class Db
     }
 
     /**
-     * @param int    $object_id
      * @param string $type
+     * @param int    $object_id
      *
-     * @return string|null
+     * @return array|object|void|null
      */
-    public function get_entry( int $object_id = 0, string $type = '' )
+    private function get_entry( string $type, int $object_id )
     {
-        if( ! $object_id && ! $type ) {
-            return null;
-        }
-
         global $wpdb;
 
         $table = $this->get_table();
-        $query = "SELECT html FROM $wpdb->prefix$table";
+        $query = "SELECT * FROM $wpdb->prefix$table";
         $where = false;
 
         if( $object_id ) {
@@ -104,11 +100,21 @@ class Db
 
         if( $type ) {
             $query .= $where ? " AND" : " WHERE";
-            $where = true;
             $query .= $wpdb->prepare( " `type` = '%s'", $type );
         }
 
-        return $wpdb->get_var( $query );
+        return $wpdb->get_row( $query );
+    }
+
+    /**
+     * @param string $type
+     * @param int    $object_id
+     *
+     * @return string
+     */
+    public function get_prerender_content( string $type, int $object_id = 0 ): string
+    {
+        return $this->get_entry( $type, $object_id )->html ?? '';
     }
 
     /**
@@ -118,17 +124,13 @@ class Db
      *
      * @return bool
      */
-    public function save_entry( string $html, int $object_id = 0, string $type = '' ): bool
+    public function save_entry( string $html, string $type, int $object_id = 0 ): bool
     {
-        if( ! $object_id && ! $type ) {
-            return false;
-        }
-
         global $wpdb;
 
         $table = $this->get_table();
 
-        if( $entry = $this->get_entry( $object_id, $type ) ) {
+        if( $this->get_entry( $type, $object_id ) ) {
             $query = $wpdb->prepare(
                 "UPDATE $wpdb->prefix$table SET `html` = %s, `updated` = %s",
                 $html,
@@ -143,7 +145,6 @@ class Db
 
             if( $type ) {
                 $query .= $where ? " AND" : " WHERE";
-                $where = true;
                 $query .= $wpdb->prepare( " `type` = '%s'", $type );
             }
         } else {
@@ -157,22 +158,17 @@ class Db
             );
         }
 
-        return !! $wpdb->query( $query );
+        return ( bool ) $wpdb->query( $query );
     }
 
     /**
-     * @param string $html
      * @param int    $object_id
      * @param string $type
      *
      * @return bool
      */
-    public function clear_entry( int $object_id = 0, string $type = '' ): bool
+    public function clear_entry( string $type, int $object_id = 0 ): bool
     {
-        if( ! $object_id && ! $type ) {
-            return false;
-        }
-
-        return $this->save_entry( '', $object_id, $type );
+        return $this->save_entry( '', $type, $object_id );
     }
 }
