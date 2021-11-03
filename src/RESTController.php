@@ -125,8 +125,8 @@ class RESTController extends WP_REST_Controller
     public function check_permissions( WP_REST_Request $request )
     {
         $is_secret_valid = (
-            false !== ( $secret_hash = get_transient( 'wp_prerender_secret' ) )
-            && wp_check_password( $request->get_param( 'secret' ), $secret_hash )
+            false !== ( $secret = get_transient( 'wp_prerender_secret' ) )
+            && wp_check_password( $secret, $request->get_param( 'secret' ) )
         );
 
         return $is_secret_valid
