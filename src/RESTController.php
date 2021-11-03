@@ -89,16 +89,17 @@ class RESTController extends WP_REST_Controller
         $content = $request->get_param( 'content' );
 
         switch( $type = $request->get_param( 'type' ) ) {
-            case 'archive':
-                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, "{$id}_archive" );
+            case 'frontpage':
+                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $content, $type );
 
                 break;
-            case 'term':
-                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, "term", $id );
+            case 'archive':
+                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $content, "{$id}_$type" );
 
                 break;
             case 'post':
-                $is_data_updated = $GLOBALS['wp_prerender_aws_lambda']->get_db()->save_entry( $content, "post", $id );
+            case 'term':
+                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $content, $type, $id );
 
                 break;
             default:

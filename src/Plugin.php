@@ -71,18 +71,23 @@ class Plugin
         return $this->db;
     }
 
+    /**
+     * Hook registration
+     */
     public function run()
     {
-        if( apply_filters( 'wp_enable_prerender', false ) ) {
-            add_action( 'save_post', [ $this, 'schedule_post_render' ] );
-            add_action( 'saved_term', [ $this, 'schedule_term_render' ], 10, 3 );
-            add_action( 'wp_prerender_archive_content', [ $this, 'archive_render' ], 10, 2 );
-            add_action( 'wp_prerender_post_content', [ $this, 'post_render' ] );
-            add_action( 'wp_prerender_term_content', [ $this, 'term_render' ], 10, 2 );
-            add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
-        }
+        add_action( 'save_post', [ $this, 'schedule_post_render' ] );
+        add_action( 'saved_term', [ $this, 'schedule_term_render' ], 10, 3 );
+        add_action( 'wp_prerender_archive_content', [ $this, 'archive_render' ], 10, 2 );
+        add_action( 'wp_prerender_post_content', [ $this, 'post_render' ] );
+        add_action( 'wp_prerender_term_content', [ $this, 'term_render' ], 10, 2 );
+        add_action( 'wp_prerender_frontpage_content', [ $this, 'frontpage_render' ] );
+        add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
     }
 
+    /**
+     * Register REST routes
+     */
     public function register_rest_routes()
     {
         $this->get_rest_controller()->register_routes();
@@ -109,6 +114,12 @@ class Plugin
         // Prerender post content
         $this->get_db()->clear_entry( 'post', $post_id );
         wp_schedule_single_event( time(), 'wp_prerender_post_content', [ $post_id ] );
+
+        // Prerender frontpage
+        if( ! get_option( 'page_on_front' ) ) {
+            $this->get_db()->clear_entry( 'frontpage' );
+            wp_schedule_single_event( time(), 'wp_prerender_frontpage_content' );
+        }
 
         // Prerender post archive content
         if( $link = get_post_type_archive_link( $post_type = get_post_type( $post_id ) ) ) {
@@ -149,6 +160,12 @@ class Plugin
         if( $taxonomy && $taxonomy->public ) {
             $this->get_db()->clear_entry( 'term', $term->term_id );
             wp_schedule_single_event( time(), 'wp_prerender_term_content', [ $term_id, $taxonomy_slug ] );
+
+            // Prerender frontpage
+            if( ! get_option( 'page_on_front' ) ) {
+                $this->get_db()->clear_entry( 'frontpage' );
+                wp_schedule_single_event( time(), 'wp_prerender_frontpage_content' );
+            }
         }
     }
 
@@ -173,6 +190,18 @@ class Plugin
             'type'          => 'term',
             'id'            => $term_id,
             'url'           => get_term_link( $term_id, $taxonomy )
+        ] );
+    }
+
+    /**
+     * Render archive content
+     */
+    public function frontpage_render(): void
+    {
+        $this->render_with_lambda( [
+            'type'          => 'frontpage',
+            'id'            => '',
+            'url'           => home_url( '/' )
         ] );
     }
 
@@ -212,5 +241,16 @@ class Plugin
                 ]
             )
         );
+    }
+
+    /**
+     * @param string $type
+     * @param int    $id
+     *
+     * @return string
+     */
+    public function get_content( string $type, int $id = 0 )
+    {
+        return $this->get_db()->get_prerender_content( $type, $id );
     }
 }

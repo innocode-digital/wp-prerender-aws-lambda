@@ -3,7 +3,7 @@
 Requires at least: PHP 7.1, WordPress 5.3.2
 
 ###    Description
-WordPress plugin for rendering post/page content via AWS Lambda. Save rendered content to post meta field "prerender", which you can display before executing the frontend app.
+WordPress plugin for rendering post/page content via AWS Lambda.
 
 Add the following constants to `wp-config.php`:
 
@@ -47,3 +47,11 @@ add_filter( 'wp_archive_prerender', function ( $prerender, $post_id ): bool {
     return $prerender;
 }, 10, 2 );
 ````
+
+To get prerender content please use `innocode_wp_prerender_aws_lambda` function:
+
+````
+innocode_wp_prerender_aws_lambda()->get_content( $type, $id );
+````
+
+where `type` can be `frontpage`, `post`, `term`, `{$post_type}_archive`. Parameter `$id` is required only for `post` and `term` types

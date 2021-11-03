@@ -56,6 +56,9 @@ class Db
         return ( bool ) get_option( "wp_table_$table" );
     }
 
+    /**
+     * @param string $table
+     */
     private function create_table( string $table )
     {
         global $wpdb;
@@ -112,7 +115,7 @@ class Db
      *
      * @return string
      */
-    public function get_prerender_content( string $type, int $object_id = 0 ): string
+    public function get_prerender_content( string $type, int $object_id ): string
     {
         return $this->get_entry( $type, $object_id )->html ?? '';
     }

@@ -23,7 +23,8 @@ if ( ! function_exists( 'innocode_wp_prerender_aws_lambda_init' ) ) {
             ! defined( 'AWS_LAMBDA_WP_PRERENDER_KEY' ) ||
             ! defined( 'AWS_LAMBDA_WP_PRERENDER_SECRET' ) ||
             ! defined( 'AWS_LAMBDA_WP_PRERENDER_REGION' ) ||
-            ! class_exists( 'Innocode\Prerender\Plugin' )
+            ! class_exists( 'Innocode\Prerender\Plugin' ) ||
+            ! apply_filters( 'wp_enable_prerender', false )
         ) {
             return;
         }
@@ -41,3 +42,18 @@ if ( ! function_exists( 'innocode_wp_prerender_aws_lambda_init' ) ) {
 }
 
 add_action( 'init', 'innocode_wp_prerender_aws_lambda_init' );
+
+if ( ! function_exists( 'innocode_wp_prerender_aws_lambda' ) ) {
+    function innocode_wp_prerender_aws_lambda() : Innocode\Prerender\Plugin {
+        global $wp_prerender_aws_lambda;
+
+        if ( is_null( $wp_prerender_aws_lambda ) ) {
+            trigger_error(
+                'Missing required constants or prerender disabled',
+                E_USER_ERROR
+            );
+        }
+
+        return $wp_prerender_aws_lambda;
+    }
+}
