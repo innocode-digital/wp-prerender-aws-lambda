@@ -116,10 +116,8 @@ class Plugin
         wp_schedule_single_event( time(), 'wp_prerender_post_content', [ $post_id ] );
 
         // Prerender frontpage
-        if( ! get_option( 'page_on_front' ) ) {
-            $this->get_db()->clear_entry( 'frontpage' );
-            wp_schedule_single_event( time(), 'wp_prerender_frontpage_content' );
-        }
+        $this->get_db()->clear_entry( 'frontpage' );
+        wp_schedule_single_event( time(), 'wp_prerender_frontpage_content' );
 
         // Prerender post archive content
         if( $link = get_post_type_archive_link( $post_type = get_post_type( $post_id ) ) ) {
@@ -158,14 +156,12 @@ class Plugin
         $taxonomy = get_taxonomy( $taxonomy_slug );
 
         if( $taxonomy && $taxonomy->public ) {
-            $this->get_db()->clear_entry( 'term', $term->term_id );
+            $this->get_db()->clear_entry( 'term', $term_id );
             wp_schedule_single_event( time(), 'wp_prerender_term_content', [ $term_id, $taxonomy_slug ] );
 
             // Prerender frontpage
-            if( ! get_option( 'page_on_front' ) ) {
-                $this->get_db()->clear_entry( 'frontpage' );
-                wp_schedule_single_event( time(), 'wp_prerender_frontpage_content' );
-            }
+            $this->get_db()->clear_entry( 'frontpage' );
+            wp_schedule_single_event( time(), 'wp_prerender_frontpage_content' );
         }
     }
 
