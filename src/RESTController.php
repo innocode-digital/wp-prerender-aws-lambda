@@ -94,7 +94,7 @@ class RESTController extends WP_REST_Controller
 
                 break;
             case 'archive':
-                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $content, "{$id}_$type" );
+                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $content, "{$type}_$id" );
 
                 break;
             case 'post':

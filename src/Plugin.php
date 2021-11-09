@@ -77,7 +77,9 @@ class Plugin
     public function run()
     {
         add_action( 'save_post', [ $this, 'schedule_post_render' ] );
+        add_action( 'delete_post', [ $this, 'delete_post_prerender' ] );
         add_action( 'saved_term', [ $this, 'schedule_term_render' ], 10, 3 );
+        add_action( 'delete_term', [ $this, 'delete_term_prerender' ] );
         add_action( 'wp_prerender_archive_content', [ $this, 'archive_render' ], 10, 2 );
         add_action( 'wp_prerender_post_content', [ $this, 'post_render' ] );
         add_action( 'wp_prerender_term_content', [ $this, 'term_render' ], 10, 2 );
@@ -216,6 +218,22 @@ class Plugin
     }
 
     /**
+     * Render custom content
+     *
+     * @param string $type
+     * @param string $url
+     * @param int    $id
+     */
+    public function render( string $type, string $url, int $id = 0 ): void
+    {
+        $this->render_with_lambda( [
+            'type'          => esc_attr( $type ),
+            'id'            => absint( $id ),
+            'url'           => esc_url( $url ),
+        ] );
+    }
+
+    /**
      * Render html markup with AWS Lambda function
      *
      * @param array $args
@@ -240,6 +258,22 @@ class Plugin
     }
 
     /**
+     * @param int $id
+     */
+    public function delete_post_prerender( int $id )
+    {
+        $this->get_db()->delete_entry( 'post', $id );
+    }
+
+    /**
+     * @param int $id
+     */
+    public function delete_term_prerender( int $id )
+    {
+        $this->get_db()->delete_entry( 'term', $id );
+    }
+
+    /**
      * @param string $type
      * @param int    $id
      *
@@ -247,6 +281,6 @@ class Plugin
      */
     public function get_content( string $type, int $id = 0 )
     {
-        return $this->get_db()->get_prerender_content( $type, $id );
+        return $this->get_db()->get_html( $type, $id );
     }
 }

@@ -48,4 +48,29 @@ class Tools
 
         return apply_filters( 'wp_term_prerender', in_array( $post_id, $query->posts ), $post_id );
     }
+
+    /**
+     * @param string $type
+     *
+     * @return bool
+     */
+    public static function check_type( string $type ): bool
+    {
+        $post_types = get_post_types( [ 'has_archive' => true ] );
+
+        foreach( $post_types as $post_type ) {
+            $types[] = "archive_$post_type";
+        }
+
+        $types = apply_filters( 'innocode_prerender_types', array_merge(
+            [
+                'post',
+                'term',
+                'frontpage'
+            ],
+            $types )
+        );
+
+        return in_array( $type, $types );
+    }
 }
