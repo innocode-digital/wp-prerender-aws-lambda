@@ -35,12 +35,12 @@ class RESTController extends WP_REST_Controller
             $this->rest_base,
             [
                 'methods'               => WP_REST_Server::CREATABLE,
-                'callback'              => [ $this, 'save_prerender_content' ],
-                'permission_callback'   => [ $this, 'check_permissions' ],
+                'callback'              => [ $this, 'create_item' ],
+                'permission_callback'   => [ $this, 'create_item_permissions_check' ],
                 'args'                  => [
                     'type'      => [
                         'required'          => true,
-                        'description'       => __( 'Type', 'innocode-wp-prerender' ),
+                        'description'       => __( 'Type', 'innocode-prerender' ),
                         'validate_callback' => function ( $type ) {
                             return is_string( $type );
                         },
@@ -50,23 +50,23 @@ class RESTController extends WP_REST_Controller
                     ],
                     'id'   => [
                         'required'          => true,
-                        'description'       => __( 'ID', 'innocode-wp-prerender' ),
+                        'description'       => __( 'ID', 'innocode-prerender' ),
                         'type'              => 'string',
                         'sanitize_callback' => function ( $id ) {
                             return esc_attr( $id );
                         }
                     ],
-                    'content'   => [
+                    'html'   => [
                         'required'          => true,
-                        'description'       => __( 'Content', 'innocode-wp-prerender' ),
+                        'description'       => __( 'HTML', 'innocode-prerender' ),
                         'type'              => 'string',
-                        'sanitize_callback' => function ( $content ) {
-                            return esc_html( $content );
+                        'sanitize_callback' => function ( $html ) {
+                            return esc_html( $html );
                         }
                     ],
                     'secret'    => [
                         'required'          => true,
-                        'description'       => __( 'Secret', 'innocode-wp-prerender' ),
+                        'description'       => __( 'Secret', 'innocode-prerender' ),
                         'validate_callback' => function ( $secret ) {
                             return is_string( $secret );
                         },
@@ -83,23 +83,23 @@ class RESTController extends WP_REST_Controller
      *
      * @return \WP_REST_Response
      */
-    public function save_prerender_content( WP_REST_Request $request ): WP_REST_Response
+    public function create_item( WP_REST_Request $request ): WP_REST_Response
     {
         $id = $request->get_param( 'id' );
-        $content = $request->get_param( 'content' );
+        $html = $request->get_param( 'html' );
 
         switch( $type = $request->get_param( 'type' ) ) {
             case 'frontpage':
-                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $content, $type );
+                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, $type );
 
                 break;
             case 'archive':
-                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $content, "{$type}_$id" );
+                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, "{$type}_$id" );
 
                 break;
             case 'post':
             case 'term':
-                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $content, $type, $id );
+                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, $type, $id );
 
                 break;
             default:
@@ -123,7 +123,7 @@ class RESTController extends WP_REST_Controller
      *
      * @return bool|WP_Error
      */
-    public function check_permissions( WP_REST_Request $request )
+    public function create_item_permissions_check( WP_REST_Request $request )
     {
         $is_secret_valid = (
             false !== ( $secret = get_transient( 'wp_prerender_secret' ) )
@@ -132,8 +132,8 @@ class RESTController extends WP_REST_Controller
 
         return $is_secret_valid
             ?: new WP_Error(
-                'rest_innocode_aws_lambda_prerender_cannot_save_content',
-                __( 'Sorry, you are not allowed to save prerender content', 'innocode-wp-prerender' ),
+                'rest_innocode_aws_lambda_prerender_cannot_save_html',
+                __( 'Sorry, you are not allowed to save prerender html', 'innocode-prerender' ),
                 [
                     'status' => WP_Http::UNAUTHORIZED,
                 ]

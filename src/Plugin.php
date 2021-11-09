@@ -80,10 +80,10 @@ class Plugin
         add_action( 'delete_post', [ $this, 'delete_post_prerender' ] );
         add_action( 'saved_term', [ $this, 'schedule_term_render' ], 10, 3 );
         add_action( 'delete_term', [ $this, 'delete_term_prerender' ] );
-        add_action( 'wp_prerender_archive_content', [ $this, 'archive_render' ], 10, 2 );
-        add_action( 'wp_prerender_post_content', [ $this, 'post_render' ] );
-        add_action( 'wp_prerender_term_content', [ $this, 'term_render' ], 10, 2 );
-        add_action( 'wp_prerender_frontpage_content', [ $this, 'frontpage_render' ] );
+        add_action( 'innocode_prerender_archive', [ $this, 'archive_render' ], 10, 2 );
+        add_action( 'innocode_prerender_post', [ $this, 'post_render' ] );
+        add_action( 'innocode_prerender_term', [ $this, 'term_render' ], 10, 2 );
+        add_action( 'innocode_prerender_frontpage', [ $this, 'frontpage_render' ] );
         add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
     }
 
@@ -115,17 +115,17 @@ class Plugin
 
         // Prerender post content
         $this->get_db()->clear_entry( 'post', $post_id );
-        wp_schedule_single_event( time(), 'wp_prerender_post_content', [ $post_id ] );
+        wp_schedule_single_event( time(), 'innocode_prerender_post', [ $post_id ] );
 
         // Prerender frontpage
         $this->get_db()->clear_entry( 'frontpage' );
-        wp_schedule_single_event( time(), 'wp_prerender_frontpage_content' );
+        wp_schedule_single_event( time(), 'innocode_prerender_frontpage' );
 
         // Prerender post archive content
         if( $link = get_post_type_archive_link( $post_type = get_post_type( $post_id ) ) ) {
             if( Tools::is_post_showed_in_archive( $post_id, $post_type ) ) {
                 $this->get_db()->clear_entry( "{$post_type}_archive" );
-                wp_schedule_single_event( time(), 'wp_prerender_archive_content', [ $post_type, $link ] );
+                wp_schedule_single_event( time(), 'innocode_prerender_archive', [ $post_type, $link ] );
             }
         }
 
@@ -139,7 +139,7 @@ class Plugin
                 foreach( $post_terms as $term ) {
                     if( Tools::is_post_showed_in_term( $post_id, $term->term_id ) ) {
                         $this->get_db()->clear_entry( 'term', $term->term_id );
-                        wp_schedule_single_event( time(), 'wp_prerender_term_content', [ $term->term_id, $taxonomy ] );
+                        wp_schedule_single_event( time(), 'innocode_prerender_term', [ $term->term_id, $taxonomy ] );
                     }
                 }
             }
@@ -159,11 +159,11 @@ class Plugin
 
         if( $taxonomy && $taxonomy->public ) {
             $this->get_db()->clear_entry( 'term', $term_id );
-            wp_schedule_single_event( time(), 'wp_prerender_term_content', [ $term_id, $taxonomy_slug ] );
+            wp_schedule_single_event( time(), 'innocode_prerender_term', [ $term_id, $taxonomy_slug ] );
 
             // Prerender frontpage
             $this->get_db()->clear_entry( 'frontpage' );
-            wp_schedule_single_event( time(), 'wp_prerender_frontpage_content' );
+            wp_schedule_single_event( time(), 'innocode_prerender_frontpage' );
         }
     }
 
@@ -242,16 +242,16 @@ class Plugin
     {
         $lambda = $this->get_lambda();
 
-        if( false === $secret = get_transient( 'wp_prerender_secret' ) ) {
+        if( false === $secret = get_transient( 'innocode_prerender_secret' ) ) {
             $secret = wp_generate_password( 24 );
-            set_transient( 'wp_prerender_secret', $secret, 15 * MINUTE_IN_SECONDS );
+            set_transient( 'innocode_prerender_secret', $secret, 15 * MINUTE_IN_SECONDS );
         }
 
         $lambda(
             wp_parse_args( $args, [
                     'return_url'    => $this->rest_controller->get_return_url(),
                     'secret'        => wp_hash_password( $secret ),
-                    'element'       => apply_filters( 'wp_prerender_element', $this->element )
+                    'element'       => apply_filters( 'innocode_prerender_element', $this->element )
                 ]
             )
         );
@@ -279,7 +279,7 @@ class Plugin
      *
      * @return string
      */
-    public function get_content( string $type, int $id = 0 )
+    public function get_html( string $type, int $id = 0 )
     {
         return $this->get_db()->get_html( $type, $id );
     }

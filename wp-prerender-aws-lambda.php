@@ -23,8 +23,7 @@ if ( ! function_exists( 'innocode_wp_prerender_aws_lambda_init' ) ) {
             ! defined( 'AWS_LAMBDA_WP_PRERENDER_KEY' ) ||
             ! defined( 'AWS_LAMBDA_WP_PRERENDER_SECRET' ) ||
             ! defined( 'AWS_LAMBDA_WP_PRERENDER_REGION' ) ||
-            ! class_exists( 'Innocode\Prerender\Plugin' ) ||
-            ! apply_filters( 'wp_enable_prerender', false )
+            ! class_exists( 'Innocode\Prerender\Plugin' )
         ) {
             return;
         }
