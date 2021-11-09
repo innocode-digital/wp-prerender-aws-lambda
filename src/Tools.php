@@ -56,10 +56,12 @@ class Tools
      */
     public static function check_type( string $type ): bool
     {
-        $post_types = get_post_types( [ 'has_archive' => true ] );
+        $post_types = get_post_types();
 
         foreach( $post_types as $post_type ) {
-            $types[] = "archive_$post_type";
+            if( get_post_type_archive_link( $post_type ) ) {
+                $types[] = "archive_$post_type";
+            }
         }
 
         $types = apply_filters( 'innocode_prerender_types', array_merge(
