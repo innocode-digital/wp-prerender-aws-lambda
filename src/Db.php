@@ -110,11 +110,11 @@ class Db
      *
      * @return bool
      */
-    private function create_entry( string $html, string $type, int $object_id = 0 ): bool
+    private function create_entry( string $html, string $type, int $object_id = 0 )
     {
         global $wpdb;
 
-        return (bool) $wpdb->insert(
+        return $wpdb->insert(
             $wpdb->prefix . $this->get_table(),
             [
                 'created'   => date( 'Y-m-d H:i:s', time() ),
@@ -127,14 +127,7 @@ class Db
         );
     }
 
-    /**
-     * @param string $html
-     * @param string $type
-     * @param int    $object_id
-     *
-     * @return bool
-     */
-    private function update_entry( string $html, string $type, int $object_id = 0 ): bool
+    private function update_entry( string $html, string $type, int $object_id = 0 )
     {
         global $wpdb;
 
@@ -146,7 +139,7 @@ class Db
             $where_format[] = '%d';
         }
 
-        return (bool) $wpdb->update(
+        return $wpdb->update(
             $wpdb->prefix . $this->get_table(),
             [
                 'updated'   => date( 'Y-m-d H:i:s', time() ),
@@ -158,14 +151,7 @@ class Db
         );
     }
 
-    /**
-     * @param string $html
-     * @param int    $object_id
-     * @param string $type
-     *
-     * @return bool
-     */
-    public function save_entry( string $html, string $type, int $object_id = 0 ): bool
+    public function save_entry( string $html, string $type, int $object_id = 0 )
     {
         if( ! Tools::check_type( $type ) ) {
             return false;

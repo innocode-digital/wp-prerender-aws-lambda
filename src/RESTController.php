@@ -90,27 +90,27 @@ class RESTController extends WP_REST_Controller
 
         switch( $type = $request->get_param( 'type' ) ) {
             case 'frontpage':
-                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, $type );
+                $number = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, $type );
 
                 break;
             case 'archive':
-                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, "{$type}_$id" );
+                $number = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, "{$type}_$id" );
 
                 break;
             case 'post':
             case 'term':
-                $is_data_updated = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, $type, $id );
+                $number = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, $type, $id );
 
                 break;
             default:
-                $is_data_updated = false;
+                $number = false;
 
                 break;
         }
 
         return new WP_REST_Response(
-            $is_data_updated,
-            $is_data_updated
+            $number,
+            $number
                 ? WP_Http::OK
                 : WP_Http::INTERNAL_SERVER_ERROR
         );
