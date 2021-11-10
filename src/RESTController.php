@@ -16,6 +16,17 @@ use WP_REST_Server;
  */
 class RESTController extends WP_REST_Controller
 {
+
+    /**
+     * @var string
+     */
+    private $namespace;
+
+    /**
+     * @var string
+     */
+    private $rest_base;
+
     /**
      * REST constructor
      */
@@ -126,7 +137,7 @@ class RESTController extends WP_REST_Controller
     public function create_item_permissions_check( $request )
     {
         $is_secret_valid = (
-            false !== ( $secret = get_transient( 'wp_prerender_secret' ) )
+            false !== ( $secret = get_transient( 'innocode_prerender_secret' ) )
             && wp_check_password( $secret, $request->get_param( 'secret' ) )
         );
 
