@@ -12,8 +12,8 @@ use WP_Query;
 class Tools
 {
     /**
-     * @param $post_id
-     * @param $post_type
+     * @param int $post_id
+     * @param string $post_type
      *
      * @return bool
      */
@@ -24,12 +24,12 @@ class Tools
             'fields'    => 'ids'
         ] );
 
-        return apply_filters( 'innocode_prerender_archive', in_array( $post_id, $query->posts ), $post_id );
+        return apply_filters( 'innocode_prerender_showed_in_archive', in_array( $post_id, $query->posts ), $post_id );
     }
 
     /**
-     * @param $post_id
-     * @param $term_id
+     * @param int $post_id
+     * @param int $term_id
      *
      * @return bool
      */
@@ -46,7 +46,7 @@ class Tools
             ]
         ] );
 
-        return apply_filters( 'innocode_prerender_term', in_array( $post_id, $query->posts ), $post_id );
+        return apply_filters( 'innocode_prerender_showed_in_term', in_array( $post_id, $query->posts ), $post_id );
     }
 
     /**
