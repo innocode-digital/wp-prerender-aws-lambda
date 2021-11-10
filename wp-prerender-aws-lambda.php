@@ -34,7 +34,7 @@ if ( ! function_exists( 'innocode_wp_prerender_aws_lambda_init' ) ) {
             AWS_LAMBDA_WP_PRERENDER_REGION,
             defined( 'AWS_LAMBDA_WP_PRERENDER_FUNCTION' )
                 ? AWS_LAMBDA_WP_PRERENDER_FUNCTION
-                : null
+                : 'wordpress-prerender'
         );
         $GLOBALS['wp_prerender_aws_lambda']->run();
     }

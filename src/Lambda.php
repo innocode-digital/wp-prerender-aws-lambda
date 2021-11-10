@@ -15,7 +15,7 @@ class Lambda
     /**
      * @var string
      */
-    private $function = 'wordpress-prerender';
+    private $function;
 
     /**
      * @var LambdaClient
