@@ -20,12 +20,12 @@ class RESTController extends WP_REST_Controller
     /**
      * @var string
      */
-    private $namespace;
+    protected $namespace;
 
     /**
      * @var string
      */
-    private $rest_base;
+    protected $rest_base;
 
     /**
      * REST constructor
