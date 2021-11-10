@@ -79,11 +79,11 @@ class RESTController extends WP_REST_Controller
     /**
      * Save rendered content
      *
-     * @param \WP_REST_Request $request
+     * @param WP_REST_Request $request
      *
-     * @return \WP_REST_Response
+     * @return WP_REST_Response
      */
-    public function create_item( WP_REST_Request $request ): WP_REST_Response
+    public function create_item( $request )
     {
         $id = $request->get_param( 'id' );
         $html = $request->get_param( 'html' );
@@ -119,11 +119,11 @@ class RESTController extends WP_REST_Controller
     /**
      * Check permissions to save post meta
      *
-     * @param \WP_REST_Request $request
+     * @param WP_REST_Request $request
      *
      * @return bool|WP_Error
      */
-    public function create_item_permissions_check( WP_REST_Request $request )
+    public function create_item_permissions_check( $request )
     {
         $is_secret_valid = (
             false !== ( $secret = get_transient( 'wp_prerender_secret' ) )

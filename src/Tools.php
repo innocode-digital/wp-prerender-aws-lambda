@@ -24,7 +24,7 @@ class Tools
             'fields'    => 'ids'
         ] );
 
-        return apply_filters( 'wp_archive_prerender', in_array( $post_id, $query->posts ), $post_id );
+        return apply_filters( 'innocode_prerender_archive', in_array( $post_id, $query->posts ), $post_id );
     }
 
     /**
@@ -46,7 +46,7 @@ class Tools
             ]
         ] );
 
-        return apply_filters( 'wp_term_prerender', in_array( $post_id, $query->posts ), $post_id );
+        return apply_filters( 'innocode_prerender_term', in_array( $post_id, $query->posts ), $post_id );
     }
 
     /**

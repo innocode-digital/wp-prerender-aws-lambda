@@ -21,6 +21,26 @@ add_filter( 'innocode_prerender_element', function () {
 } );
 ````
 
+To change the logic (when post is saved) of term prerender, use hook:
+
+````
+add_filter( 'innocode_prerender_term', function ( $prerender, $post_id ): bool {
+    ...
+    
+    return $prerender;
+}, 10, 2 );
+````
+
+To change the logic (when post is saved) of archive prerender, use hook:
+
+````
+add_filter( 'innocode_prerender_archive', function ( $prerender, $post_id ): bool {
+    ...
+    
+    return $prerender;
+}, 10, 2 );
+````
+
 To get prerender content please use `innocode_wp_prerender_aws_lambda` function:
 
 ````
