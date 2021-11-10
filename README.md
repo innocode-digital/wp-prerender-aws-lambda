@@ -24,7 +24,7 @@ add_filter( 'innocode_prerender_element', function () {
 To change the logic (when post is saved) of term prerender, use hook:
 
 ````
-add_filter( 'innocode_prerender_term', function ( $prerender, $post_id ): bool {
+add_filter( 'innocode_prerender_showed_in_term', function ( $prerender, $post_id ): bool {
     ...
     
     return $prerender;
@@ -34,7 +34,7 @@ add_filter( 'innocode_prerender_term', function ( $prerender, $post_id ): bool {
 To change the logic (when post is saved) of archive prerender, use hook:
 
 ````
-add_filter( 'innocode_prerender_archive', function ( $prerender, $post_id ): bool {
+add_filter( 'innocode_prerender_showed_in_archive', function ( $prerender, $post_id ): bool {
     ...
     
     return $prerender;
