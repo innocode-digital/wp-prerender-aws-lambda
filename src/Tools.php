@@ -73,6 +73,7 @@ class Tools
             $types )
         );
 
-        return in_array( $type, $types );
+        return in_array( $type, $types )
+               || (bool) preg_match("/^(year|month_\d+|day_\d+_\d+)_\d+_archive/", $type );
     }
 }

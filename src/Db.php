@@ -69,7 +69,7 @@ class Db
             ID bigint(20) unsigned NOT NULL auto_increment,
             created datetime NOT NULL default '0000-00-00 00:00:00',
             updated datetime NOT NULL default '0000-00-00 00:00:00',
-            type varchar(15) NOT NULL default '',
+            type varchar(25) NOT NULL default '',
             object_id bigint(20) NOT NULL default 0,
             html longtext,
             PRIMARY KEY (ID),
@@ -110,7 +110,7 @@ class Db
      *
      * @return int
      */
-    private function create_entry( string $html, string $type, int $object_id = 0 )
+    private function create_entry( string $html, string $type, int $object_id = 0 ): int
     {
         global $wpdb;
 
@@ -179,12 +179,12 @@ class Db
     }
 
     /**
-     * @param int    $object_id
      * @param string $type
+     * @param int    $object_id
      *
-     * @return bool
+     * @return false|int
      */
-    public function clear_entry( string $type, int $object_id = 0 ): bool
+    public function clear_entry( string $type, int $object_id = 0 )
     {
         return $this->save_entry( '', $type, $object_id );
     }
@@ -198,7 +198,7 @@ class Db
     public function delete_entry( string $type, int $object_id = 0 ): bool
     {
         if( ! Tools::check_type( $type ) ) {
-            return '';
+            return false;
         }
 
         global $wpdb;
@@ -227,7 +227,7 @@ class Db
     public function get_html( string $type, int $object_id = 0 ): string
     {
         if( ! Tools::check_type( $type ) ) {
-            return false;
+            return '';
         }
 
         return $this->get_entry( $type, $object_id )->html ?? '';

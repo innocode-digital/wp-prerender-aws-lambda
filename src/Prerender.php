@@ -108,6 +108,25 @@ class Prerender
                 $this->get_db()->clear_entry( "{$post_type}_archive" );
                 wp_schedule_single_event( time(), 'innocode_prerender_archive', [ $post_type, $link ] );
             }
+
+            // Prerender year, month and day archive
+            if( 'post' == $post_type ) {
+                $year = get_the_date( 'Y', $post_id );
+                $month = get_the_date( 'm', $post_id );
+                $day = get_the_date( 'j', $post_id );
+
+                // Year archive
+                $this->get_db()->clear_entry( "year_{$year}_archive" );
+                wp_schedule_single_event( time(), 'innocode_prerender_archive', [ "year_$year", get_year_link( $year ) ] );
+
+                // Month archive
+                $this->get_db()->clear_entry( "month_{$month}_{$year}_archive" );
+                wp_schedule_single_event( time(), 'innocode_prerender_archive', [ "month_{$month}_$year", get_month_link( $year, $month ) ] );
+
+                // Day archive
+                $this->get_db()->clear_entry( "day_{$day}_{$month}_{$year}_archive" );
+                wp_schedule_single_event( time(), 'innocode_prerender_archive', [ "day_{$day}_{$month}_$year", get_day_link( $year, $month, $day ) ] );
+            }
         }
 
         // Prerender post terms content
