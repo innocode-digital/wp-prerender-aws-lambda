@@ -94,11 +94,11 @@ class Db
         global $wpdb;
 
         $table = $this->get_table();
-        $query =  $wpdb->prepare( "SELECT * FROM $wpdb->prefix$table WHERE `type` = '%s'", $type );
-
-        if( $object_id ) {
-            $query .= $wpdb->prepare( " AND `object_id` = '%d '", $object_id );
-        }
+        $query =  $wpdb->prepare(
+            "SELECT * FROM $wpdb->prefix$table WHERE `type` = '%s' AND `object_id` = '%d '",
+            $type,
+            $object_id
+        );
 
         return $wpdb->get_row( $query );
     }
@@ -108,13 +108,13 @@ class Db
      * @param string $type
      * @param int    $object_id
      *
-     * @return bool
+     * @return int
      */
     private function create_entry( string $html, string $type, int $object_id = 0 )
     {
         global $wpdb;
 
-        return $wpdb->insert(
+        $wpdb->insert(
             $wpdb->prefix . $this->get_table(),
             [
                 'created'   => date( 'Y-m-d H:i:s', time() ),
@@ -125,8 +125,17 @@ class Db
             ],
             [ '%s', '%s', '%s', '%d', '%s' ]
         );
+
+        return $wpdb->insert_id;
     }
 
+    /**
+     * @param string $html
+     * @param string $type
+     * @param int    $object_id
+     *
+     * @return mixed
+     */
     private function update_entry( string $html, string $type, int $object_id = 0 )
     {
         global $wpdb;
@@ -151,6 +160,13 @@ class Db
         );
     }
 
+    /**
+     * @param string $html
+     * @param string $type
+     * @param int    $object_id
+     *
+     * @return false|int
+     */
     public function save_entry( string $html, string $type, int $object_id = 0 )
     {
         if( ! Tools::check_type( $type ) ) {
@@ -182,7 +198,7 @@ class Db
     public function delete_entry( string $type, int $object_id = 0 ): bool
     {
         if( ! Tools::check_type( $type ) ) {
-            return false;
+            return '';
         }
 
         global $wpdb;
