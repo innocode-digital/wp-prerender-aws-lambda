@@ -48,3 +48,9 @@ innocode_wp_prerender_aws_lambda()->get_html( $type, $id );
 ````
 
 where `type` can be `frontpage`, `post`, `term`, `{$post_type}_archive`. Parameter `$id` is required only for `post` and `term` types
+
+To enable prerender for author template, please use filter
+
+````
+add_filter( 'innocode_prerender_author_template', '__return_true' );
+````

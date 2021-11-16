@@ -102,6 +102,13 @@ class Prerender
         $this->get_db()->clear_entry( 'frontpage' );
         wp_schedule_single_event( time(), 'innocode_prerender_frontpage' );
 
+        // Prerender author page
+        if( apply_filters( 'innocode_prerender_author_template', false ) ) {
+            $author_id = get_post_field ( 'post_author', $post_id );
+            $this->get_db()->clear_entry( 'author', $author_id );
+            wp_schedule_single_event( time(), 'innocode_prerender_author', [ $author_id ] );
+        }
+
         // Prerender post archive content
         if( $link = get_post_type_archive_link( $post_type = get_post_type( $post_id ) ) ) {
             if( Tools::is_post_showed_in_archive( $post_id, $post_type ) ) {
@@ -230,6 +237,20 @@ class Prerender
             'type'          => 'post',
             'id'            => $post_id,
             'url'           => get_permalink( $post_id )
+        ] );
+    }
+
+    /**
+     * Render author content
+     *
+     * @param int $author_id
+     */
+    public function author_render( int $author_id ): void
+    {
+        $this->render_with_lambda( [
+            'type'          => 'author',
+            'id'            => $author_id,
+            'url'           => get_author_posts_url( $author_id )
         ] );
     }
 

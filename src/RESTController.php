@@ -108,6 +108,7 @@ class RESTController extends WP_REST_Controller
                 $number = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, "{$type}_$id" );
 
                 break;
+            case 'author':
             case 'post':
             case 'term':
                 $number = innocode_wp_prerender_aws_lambda()->get_db()->save_entry( $html, $type, $id );

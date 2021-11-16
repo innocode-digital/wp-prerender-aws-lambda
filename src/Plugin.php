@@ -83,6 +83,7 @@ class Plugin
         add_action( 'innocode_prerender_post', [ $this->prerender, 'post_render' ] );
         add_action( 'innocode_prerender_term', [ $this->prerender, 'term_render' ], 10, 2 );
         add_action( 'innocode_prerender_frontpage', [ $this->prerender, 'frontpage_render' ] );
+        add_action( 'innocode_prerender_author', [ $this->prerender, 'author_render' ] );
         add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
     }
 
