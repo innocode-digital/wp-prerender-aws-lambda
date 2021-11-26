@@ -15,12 +15,23 @@ class Lambda
     /**
      * @var string
      */
-    private $function;
-
+    protected $key;
+    /**
+     * @var string
+     */
+    protected $secret;
+    /**
+     * @var string
+     */
+    protected $region;
+    /**
+     * @var string
+     */
+    protected $function = 'prerender-production-processor';
     /**
      * @var LambdaClient
      */
-    private $client;
+    protected $client;
 
     /**
      * Lambda constructor.
@@ -31,14 +42,33 @@ class Lambda
      */
     public function __construct( string $key, string $secret, string $region )
     {
-        $this->client = new LambdaClient( [
-            'credentials' => [
-                'key'    => $key,
-                'secret' => $secret,
-            ],
-            'region'      => $region,
-            'version'     => 'latest',
-        ] );
+        $this->key = $key;
+        $this->secret = $secret;
+        $this->region = $region;
+    }
+
+    /**
+     * @return string
+     */
+    public function get_key() : string
+    {
+        return $this->key;
+    }
+
+    /**
+     * @return string
+     */
+    public function get_secret() : string
+    {
+        return $this->secret;
+    }
+
+    /**
+     * @return string
+     */
+    public function get_region() : string
+    {
+        return $this->region;
     }
 
     /**
@@ -52,7 +82,7 @@ class Lambda
     /**
      * @return string
      */
-    private function get_function(): string
+    public function get_function() : string
     {
         return $this->function;
     }
@@ -60,9 +90,25 @@ class Lambda
     /**
      * @return LambdaClient
      */
-    private function get_client(): LambdaClient
+    public function get_client() : LambdaClient
     {
+        if ( ! isset( $this->client ) ) {
+            $this->init();
+        }
+
         return $this->client;
+    }
+
+    public function init()
+    {
+        $this->client = new LambdaClient( [
+            'credentials' => [
+                'key'    => $this->get_key(),
+                'secret' => $this->get_secret(),
+            ],
+            'region'      => $this->get_region(),
+            'version'     => 'latest',
+        ] );
     }
 
     /**
@@ -70,12 +116,12 @@ class Lambda
      *
      * @return Result
      */
-    public function __invoke( array $args ): Result
+    public function __invoke( array $args ) : Result
     {
         return $this->get_client()->invoke( [
-            'FunctionName'      => $this->get_function(),
-            'Payload'           => json_encode( $args ),
-            'InvocationType'    => 'Event'
+            'FunctionName'   => $this->get_function(),
+            'Payload'        => json_encode( $args ),
+            'InvocationType' => 'Event',
         ] );
     }
 }

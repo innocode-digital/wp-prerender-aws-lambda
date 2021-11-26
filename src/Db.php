@@ -9,31 +9,17 @@ namespace Innocode\Prerender;
  */
 class Db
 {
+    const VERSION = '1.0.0';
+
     /**
      * @var string
      */
-    private $table = 'prerender';
-
-    /**
-     * DB constructor.
-     *
-     * @param string $table
-     */
-    public function __construct( string $table = '' )
-    {
-        if( $table) {
-            $this->set_table( $table );
-        }
-
-        if( ! $this->is_table_exists( $this->get_table() ) ) {
-            $this->create_table( $this->get_table() );
-        }
-    }
+    protected $table = 'prerender';
 
     /**
      * @param string $table
      */
-    private function set_table( string $table ): void
+    public function set_table( string $table ) : void
     {
         $this->table = $table;
     }
@@ -41,31 +27,33 @@ class Db
     /**
      * @return string
      */
-    private function get_table(): string
+    public function get_table() : string
     {
         return $this->table;
     }
 
     /**
-     * @param string $table
-     *
-     * @return bool
+     * @return string|null
      */
-    private function is_table_exists( string $table ): bool
+    public function get_version() : ?string
     {
-        return ( bool ) get_option( "innocode_table_$table" );
+        return get_option( 'innocode_prerender_db_version', null );
     }
 
-    /**
-     * @param string $table
-     */
-    private function create_table( string $table )
+    public function init()
+    {
+        if ( null === $this->get_version() ) {
+            $this->create_table();
+        }
+    }
+
+    protected function create_table()
     {
         global $wpdb;
 
         $charset_collate = $wpdb->get_charset_collate();
 
-        $table_sql = "CREATE TABLE $wpdb->prefix$table (
+        $query = "CREATE TABLE $wpdb->prefix{$this->get_table()} (
             ID bigint(20) unsigned NOT NULL auto_increment,
             created datetime NOT NULL default '0000-00-00 00:00:00',
             updated datetime NOT NULL default '0000-00-00 00:00:00',
@@ -73,34 +61,14 @@ class Db
             object_id bigint(20) NOT NULL default 0,
             html longtext,
             PRIMARY KEY (ID),
-            KEY (type, object_id)
+            KEY (`type`, `object_id`)
         ) $charset_collate;\n";
 
-        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-        dbDelta( $table_sql );
+        dbDelta( $query );
 
-        update_option( "innocode_table_$table", true );
-    }
-
-    /**
-     * @param string $type
-     * @param int    $object_id
-     *
-     * @return array|object|void|null
-     */
-    private function get_entry( string $type, int $object_id = 0 )
-    {
-        global $wpdb;
-
-        $table = $this->get_table();
-        $query =  $wpdb->prepare(
-            "SELECT * FROM $wpdb->prefix$table WHERE `type` = '%s' AND `object_id` = '%d '",
-            $type,
-            $object_id
-        );
-
-        return $wpdb->get_row( $query );
+        update_option( 'innocode_prerender_db_version', static::VERSION );
     }
 
     /**
@@ -110,15 +78,16 @@ class Db
      *
      * @return int
      */
-    private function create_entry( string $html, string $type, int $object_id = 0 ): int
+    public function create_entry( string $html, string $type, int $object_id = 0 ) : int
     {
         global $wpdb;
 
+        $now = current_time( 'mysql' );
         $wpdb->insert(
             $wpdb->prefix . $this->get_table(),
             [
-                'created'   => date( 'Y-m-d H:i:s', time() ),
-                'updated'   => date( 'Y-m-d H:i:s', time() ),
+                'created'   => $now,
+                'updated'   => $now,
                 'type'      => $type,
                 'object_id' => $object_id,
                 'html'      => $html
@@ -130,34 +99,31 @@ class Db
     }
 
     /**
-     * @param string $html
      * @param string $type
      * @param int    $object_id
      *
-     * @return mixed
+     * @return array|null
      */
-    private function update_entry( string $html, string $type, int $object_id = 0 )
+    public function get_entry( string $type, int $object_id = 0 ) : ?array
     {
         global $wpdb;
 
-        $where = [ 'type'  => $type ];
-        $where_format = [ '%s' ];
+        $cache_key = "$type:$object_id";
 
-        if( $object_id ) {
-            $where[ 'object_id' ] = $object_id;
-            $where_format[] = '%d';
+        if ( false !== ( $entry = wp_cache_get( $cache_key, 'innocode_prerender' ) ) ) {
+            return $entry;
         }
 
-        return $wpdb->update(
-            $wpdb->prefix . $this->get_table(),
-            [
-                'updated'   => date( 'Y-m-d H:i:s', time() ),
-                'html'      => $html
-            ],
-            $where,
-            [' %s', '%s' ],
-            $where_format
+        $query = $wpdb->prepare(
+            "SELECT * FROM $wpdb->prefix{$this->get_table()} WHERE `type` = %s AND `object_id` = %d",
+            $type,
+            $object_id
         );
+        $entry = $wpdb->get_row( $query, ARRAY_A );
+
+        wp_cache_set( $cache_key, $entry, 'innocode_prerender' );
+
+        return $entry;
     }
 
     /**
@@ -165,28 +131,28 @@ class Db
      * @param string $type
      * @param int    $object_id
      *
-     * @return false|int
+     * @return bool
      */
-    public function save_entry( string $html, string $type, int $object_id = 0 )
+    public function update_entry( string $html, string $type, int $object_id = 0 ) : bool
     {
-        if( ! Tools::check_type( $type ) ) {
-            return false;
+        global $wpdb;
+
+        $updated = (bool) $wpdb->update(
+            $wpdb->prefix . $this->get_table(),
+            [
+                'updated' => current_time( 'mysql' ),
+                'html'    => $html,
+            ],
+            [ 'type' => $type, 'object_id' => $object_id ],
+            [' %s', '%s' ],
+            [ '%s', '%d' ]
+        );
+
+        if ( $updated ) {
+            wp_cache_delete( "$type:$object_id", 'innocode_prerender' );
         }
 
-        return $this->get_entry( $type, $object_id )
-            ? $this->update_entry( $html, $type, $object_id )
-            : $this->create_entry( $html, $type, $object_id ) ;
-    }
-
-    /**
-     * @param string $type
-     * @param int    $object_id
-     *
-     * @return false|int
-     */
-    public function clear_entry( string $type, int $object_id = 0 )
-    {
-        return $this->save_entry( '', $type, $object_id );
+        return $updated;
     }
 
     /**
@@ -195,41 +161,45 @@ class Db
      *
      * @return bool
      */
-    public function delete_entry( string $type, int $object_id = 0 ): bool
+    public function delete_entry( string $type, int $object_id = 0 ) : bool
     {
-        if( ! Tools::check_type( $type ) ) {
-            return false;
-        }
-
         global $wpdb;
 
-        $where = [ 'type'  => $type ];
-        $where_format = [ '%s' ];
+        $deleted = (bool) $wpdb->delete(
+            $wpdb->prefix . $this->get_table(),
+            [ 'type' => $type, 'object_id' => $object_id ],
+            [ '%s', '%d' ]
+        );
 
-        if( $object_id ) {
-            $where[ 'object_id' ] = $object_id;
-            $where_format[] = '%d';
+        if ( $deleted ) {
+            wp_cache_delete( "$type:$object_id", 'innocode_prerender' );
         }
 
-        return (bool) $wpdb->delete(
-            $wpdb->prefix . $this->get_table(),
-            $where,
-            $where_format
-        );
+        return $deleted;
+    }
+
+    /**
+     * @param string $html
+     * @param string $type
+     * @param int    $object_id
+     *
+     * @return bool|int
+     */
+    public function save_entry( string $html, string $type, int $object_id = 0 )
+    {
+        return null !== $this->get_entry( $type, $object_id )
+            ? $this->update_entry( $html, $type, $object_id )
+            : $this->create_entry( $html, $type, $object_id );
     }
 
     /**
      * @param string $type
      * @param int    $object_id
      *
-     * @return string
+     * @return bool|int
      */
-    public function get_html( string $type, int $object_id = 0 ): string
+    public function clear_entry( string $type, int $object_id = 0 )
     {
-        if( ! Tools::check_type( $type ) ) {
-            return '';
-        }
-
-        return $this->get_entry( $type, $object_id )->html ?? '';
+        return $this->save_entry( '', $type, $object_id );
     }
 }

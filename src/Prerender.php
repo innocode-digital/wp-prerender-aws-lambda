@@ -2,6 +2,9 @@
 
 namespace Innocode\Prerender;
 
+use Innocode\Prerender\Traits\DbTrait;
+use WP_Post;
+
 /**
  * Class Prerender
  *
@@ -9,288 +12,391 @@ namespace Innocode\Prerender;
  */
 class Prerender
 {
+    use DbTrait;
+
     /**
      * @var Lambda
      */
-    private $lambda;
-
+    protected $lambda;
     /**
-     * @var DB
+     * @var string
      */
-    private $db;
-
+    protected $selector = '#app';
     /**
-     * @var Element
+     * @var string
      */
-    private $element = '#app';
-
-    /**
-     * @var RESTController
-     */
-    private $rest_controller;
-
+    protected $return_url;
 
     /**
      * Prerender constructor.
      *
-     * @param Lambda         $lambda
-     * @param Db             $db
-     * @param RESTController $rest_controller
+     * @param string      $key
+     * @param string      $secret
+     * @param string      $region
+     * @param string|null $function
      */
-    public function __construct( Lambda $lambda, Db $db, RESTController $rest_controller )
+    public function __construct(
+        string $key,
+        string $secret,
+        string $region,
+        string $function = null
+    )
     {
-        $this->lambda = $lambda;
-        $this->db = $db;
-        $this->rest_controller = $rest_controller;
-    }
+        $this->lambda = new Lambda( $key, $secret, $region );
 
-    /**
-     * @return Db
-     */
-    public function get_db(): Db
-    {
-        return $this->db;
-    }
-
-    /**
-     * @return string
-     */
-    public function get_element(): string
-    {
-        return $this->element;
+        if ( null !== $function ) {
+            $this->lambda->set_function( $function );
+        }
     }
 
     /**
      * @return Lambda
      */
-    public function get_lambda(): Lambda
+    public function get_lambda() : Lambda
     {
         return $this->lambda;
     }
 
     /**
-     * @return RESTController
+     * @return string
      */
-    public function get_rest_controller(): RESTController
+    public function get_selector() : string
     {
-        return $this->rest_controller;
+        return apply_filters( 'innocode_prerender_selector', $this->selector );
     }
 
     /**
-     * Schedule to render post/page HTML content
-     *
-     * @param int $post_id
+     * @param string $return_url
      */
-    public function schedule_post_render( int $post_id ): void
+    public function set_return_url( string $return_url )
     {
-        if (
-            ! in_array( get_post_status( $post_id ), [
-                'publish',
-                'trash',
-            ] ) ||
-            wp_is_post_autosave( $post_id ) ||
-            wp_is_post_revision( $post_id )
-        ) {
+        $this->return_url = $return_url;
+    }
+
+    /**
+     * @return string
+     */
+    public function get_return_url() : string
+    {
+        return $this->return_url;
+    }
+
+    /**
+     * Updates Post/Page HTML.
+     *
+     * @param string $new_status
+     * @param string $old_status
+     * @param WP_Post $post
+     */
+    public function update_post( string $new_status, string $old_status, WP_Post $post ) : void
+    {
+        if ( wp_is_post_autosave( $post ) || wp_is_post_revision( $post ) ) {
             return;
         }
 
-        // Prerender post content
-        $this->get_db()->clear_entry( 'post', $post_id );
-        wp_schedule_single_event( time(), 'innocode_prerender_post', [ $post_id ] );
+        if ( 'publish' != $new_status ) {
+            $this->delete_post( $post->ID );
 
-        // Prerender frontpage
-        $this->get_db()->clear_entry( 'frontpage' );
-        wp_schedule_single_event( time(), 'innocode_prerender_frontpage' );
-
-        // Prerender author page
-        if( apply_filters( 'innocode_prerender_author_template', false ) ) {
-            $author_id = get_post_field ( 'post_author', $post_id );
-            $this->get_db()->clear_entry( 'author', $author_id );
-            wp_schedule_single_event( time(), 'innocode_prerender_author', [ $author_id ] );
+            return;
         }
 
-        // Prerender post archive content
-        if( $link = get_post_type_archive_link( $post_type = get_post_type( $post_id ) ) ) {
-            if( Tools::is_post_showed_in_archive( $post_id, $post_type ) ) {
-                $this->get_db()->clear_entry( "{$post_type}_archive" );
-                wp_schedule_single_event( time(), 'innocode_prerender_archive', [ $post_type, $link ] );
-            }
-
-            // Prerender year, month and day archive
-            if( 'post' == $post_type ) {
-                $year = get_the_date( 'Y', $post_id );
-                $month = get_the_date( 'm', $post_id );
-                $day = get_the_date( 'j', $post_id );
-
-                // Year archive
-                $this->get_db()->clear_entry( "year_{$year}_archive" );
-                wp_schedule_single_event( time(), 'innocode_prerender_archive', [ "year_$year", get_year_link( $year ) ] );
-
-                // Month archive
-                $this->get_db()->clear_entry( "month_{$month}_{$year}_archive" );
-                wp_schedule_single_event( time(), 'innocode_prerender_archive', [ "month_{$month}_$year", get_month_link( $year, $month ) ] );
-
-                // Day archive
-                $this->get_db()->clear_entry( "day_{$day}_{$month}_{$year}_archive" );
-                wp_schedule_single_event( time(), 'innocode_prerender_archive', [ "day_{$day}_{$month}_$year", get_day_link( $year, $month, $day ) ] );
-            }
-        }
-
-        // Prerender post terms content
-        global $wp_taxonomies;
-
-        foreach( get_post_taxonomies( $post_id ) as $taxonomy ) {
-            if( $wp_taxonomies[ $taxonomy ]->public ) {
-                $post_terms = get_the_terms( $post_id, $taxonomy );
-
-                foreach( $post_terms as $term ) {
-                    if( Tools::is_post_showed_in_term( $post_id, $term->term_id ) ) {
-                        $this->get_db()->clear_entry( 'term', $term->term_id );
-                        wp_schedule_single_event( time(), 'innocode_prerender_term', [ $term->term_id, $taxonomy ] );
-                    }
-                }
-            }
-        }
+        $this->schedule_post( $post->ID );
+        $this->update_post_related( $post->ID );
     }
 
     /**
-     * Schedule to render term HTML content
+     * Updates Term HTML.
      *
-     * @param int $term_id
-     * @param int $tax_id
-     * @param string $taxonomy_slug
+     * @param int    $term_id
+     * @param int    $tt_id
+     * @param string $taxonomy_name
      */
-    public function schedule_term_render( int $term_id, int $tax_id, string $taxonomy_slug ): void
+    public function update_term( int $term_id, int $tt_id, string $taxonomy_name ) : void
     {
-        $taxonomy = get_taxonomy( $taxonomy_slug );
+        $taxonomy = get_taxonomy( $taxonomy_name );
 
-        if( $taxonomy && $taxonomy->public ) {
-            $this->get_db()->clear_entry( 'term', $term_id );
-            wp_schedule_single_event( time(), 'innocode_prerender_term', [ $term_id, $taxonomy_slug ] );
+        if ( ! $taxonomy || ! $taxonomy->public ) {
+            return;
+        }
 
-            // Prerender frontpage
-            $this->get_db()->clear_entry( 'frontpage' );
-            wp_schedule_single_event( time(), 'innocode_prerender_frontpage' );
+        $this->schedule_term( $term_id, $taxonomy->name );
+        $this->update_term_related();
+    }
+
+    /**
+     * @param int $post_id
+     */
+    public function delete_post( int $post_id ) : void
+    {
+        if ( $this->get_db()->delete_entry( 'post', $post_id ) ) {
+            $this->update_post_related( $post_id );
         }
     }
 
     /**
-     * @param int $id
+     * @param int $term_id
      */
-    public function delete_post_prerender( int $id )
+    public function delete_term( int $term_id ) : void
     {
-        $this->get_db()->delete_entry( 'post', $id );
+        if ( $this->get_db()->delete_entry( 'term', $term_id ) ) {
+            $this->update_term_related();
+        }
     }
 
     /**
-     * @param int $id
+     * @param int $post_id
      */
-    public function delete_term_prerender( int $id )
+    public function update_post_related( int $post_id ) : void
     {
-        $this->get_db()->delete_entry( 'term', $id );
+        $this->schedule_frontpage();
+
+        $user_id = get_post_field( 'post_author', $post_id );
+
+        $this->schedule_author( $user_id );
+
+        $post_type = get_post_type( $post_id );
+        $post_type_archive_link = get_post_type_archive_link( $post_type );
+
+        if ( $post_type_archive_link ) {
+            $this->schedule_post_type_archive( $post_type );
+        }
+
+        if ( 'post' == $post_type ) {
+            $year = get_the_date( 'Y', $post_id );
+            $month = get_the_date( 'm', $post_id );
+            $day = get_the_date( 'd', $post_id );
+
+            $this->schedule_date_archive( $year );
+            $this->schedule_date_archive( $year . $month );
+            $this->schedule_date_archive( $year . $month . $day );
+        }
+
+        foreach( get_post_taxonomies( $post_id ) as $taxonomy_name ) {
+            $taxonomy = get_taxonomy( $taxonomy_name );
+
+            if ( ! $taxonomy || ! $taxonomy->public ) {
+                continue;
+            }
+
+            $terms = get_the_terms( $post_id, $taxonomy_name );
+
+            if ( empty( $terms ) || is_wp_error( $terms ) ) {
+                continue;
+            }
+
+            foreach ( $terms as $term ) {
+                $this->schedule_term( $term->term_id, $term->taxonomy );
+            }
+        }
+    }
+
+    public function update_term_related() : void
+    {
+        $this->schedule_frontpage();
+
+        // @TODO: What should we do if post shows term data e.g. name somewhere in content?
     }
 
     /**
-     * Render archive content
+     * @param string     $type
+     * @param string|int $object_id_or_subtype
+     * @param array      $args
      */
-    public function archive_render( string $post_type, string $archive_url ): void
+    public function schedule( string $type, $object_id_or_subtype = 0, array $args = [] ) : void
     {
-        $this->render_with_lambda( [
-            'type'          => 'archive',
-            'id'            => $post_type,
-            'url'           => $archive_url
-        ] );
+        $object_id = is_int( $object_id_or_subtype ) ? $object_id_or_subtype : 0;
+        $subtype = is_string( $object_id_or_subtype ) ? $object_id_or_subtype : '';
+
+        $this->get_db()->clear_entry( $type . ( $subtype ? "_$subtype" : '' ), $object_id );
+
+        if ( $object_id ) {
+            array_unshift( $args, $object_id );
+        }
+
+        if ( $subtype ) {
+            array_unshift( $args, $subtype );
+        }
+
+        wp_schedule_single_event( time(), "innocode_prerender_$type", $args );
     }
 
     /**
-     * Render archive content
-     */
-    public function term_render( int $term_id, string $taxonomy ): void
-    {
-        $this->render_with_lambda( [
-            'type'          => 'term',
-            'id'            => $term_id,
-            'url'           => get_term_link( $term_id, $taxonomy )
-        ] );
-    }
-
-    /**
-     * Render archive content
-     */
-    public function frontpage_render(): void
-    {
-        $this->render_with_lambda( [
-            'type'          => 'frontpage',
-            'id'            => '',
-            'url'           => home_url( '/' )
-        ] );
-    }
-
-    /**
-     * Render post content
+     * Prerenders Post/Page.
      *
      * @param int $post_id
      */
-    public function post_render( int $post_id ): void
+    public function schedule_post( int $post_id ) : void
     {
-        $this->render_with_lambda( [
-            'type'          => 'post',
-            'id'            => $post_id,
-            'url'           => get_permalink( $post_id )
-        ] );
+        $this->schedule( Plugin::TYPE_POST, $post_id );
     }
 
     /**
-     * Render author content
+     * Prerenders Term.
      *
-     * @param int $author_id
+     * @param int    $term_id
+     * @param string $taxonomy
      */
-    public function author_render( int $author_id ): void
+    public function schedule_term( int $term_id, string $taxonomy ) : void
     {
-        $this->render_with_lambda( [
-            'type'          => 'author',
-            'id'            => $author_id,
-            'url'           => get_author_posts_url( $author_id )
-        ] );
+        $this->schedule( Plugin::TYPE_POST, $term_id, [ $taxonomy ] );
     }
 
     /**
-     * Render custom content
+     * Prerenders Author Page.
+     *
+     * @param int $user_id
+     */
+    public function schedule_author( int $user_id ) : void
+    {
+        $this->schedule( Plugin::TYPE_AUTHOR, $user_id );
+    }
+
+    /**
+     * Prerenders Frontpage.
+     */
+    public function schedule_frontpage() : void
+    {
+        $this->schedule( Plugin::TYPE_FRONTPAGE );
+    }
+
+    /**
+     * Prerenders Post Type Archive.
+     *
+     * @param string $post_type
+     */
+    public function schedule_post_type_archive( string $post_type ) : void
+    {
+        $this->schedule( Plugin::TYPE_POST_TYPE_ARCHIVE, $post_type );
+    }
+
+    /**
+     * Prerenders Date Archive.
+     *
+     * @param string $date
+     */
+    public function schedule_date_archive( string $date ) : void
+    {
+        $this->schedule( Plugin::TYPE_DATE_ARCHIVE, $date );
+    }
+
+    /**
+     * Renders Post/Page.
+     *
+     * @param int $post_id
+     */
+    public function post( int $post_id ) : void
+    {
+        $this->invoke_lambda( Plugin::TYPE_POST, $post_id, get_permalink( $post_id ) );
+    }
+
+    /**
+     * Renders Term.
+     */
+    public function term( int $term_id, string $taxonomy ) : void
+    {
+        $this->invoke_lambda( Plugin::TYPE_TERM, $term_id, get_term_link( $term_id, $taxonomy ) );
+    }
+
+    /**
+     * Renders Author Page.
+     *
+     * @param int $user_id
+     */
+    public function author( int $user_id ) : void
+    {
+        $this->invoke_lambda( Plugin::TYPE_AUTHOR, $user_id, get_author_posts_url( $user_id ) );
+    }
+
+    /**
+     * Renders Frontpage.
+     */
+    public function frontpage() : void
+    {
+        $this->invoke_lambda( Plugin::TYPE_FRONTPAGE, '', home_url( '/' ) );
+    }
+
+    /**
+     * Renders Post Type Archive.
+     *
+     * @param string $post_type
+     */
+    public function post_type_archive( string $post_type ) : void
+    {
+        $this->invoke_lambda( Plugin::TYPE_POST_TYPE_ARCHIVE, $post_type, get_post_type_archive_link( $post_type ) );
+    }
+
+    /**
+     * Renders Year, Month, Day Archives.
+     *
+     * @param string $date
+     */
+    public function date_archive( string $date ) : void
+    {
+        $parsed = Helpers::parse_Ymd( $date );
+
+        if ( false === $parsed['year'] ) {
+            // Something wrong as date should always include year.
+            return;
+        }
+
+        if ( false !== $parsed['month'] ) {
+            $url = false !== $parsed['day']
+                ? get_day_link( $parsed['year'], $parsed['month'], $parsed['day'] )
+                : get_month_link( $parsed['year'], $parsed['month'] );
+        } else {
+            $url = get_year_link( $parsed['year'] );
+        }
+
+        $this->invoke_lambda( Plugin::TYPE_DATE_ARCHIVE, $date, $url );
+    }
+
+    /**
+     * Renders custom content.
+     *
+     * @param string     $type
+     * @param string|int $id
+     * @param string     $url
+     */
+    public function custom_type( string $type, $id, string $url ) : void
+    {
+        $type = Plugin::filter_type( $type );
+
+        if ( is_wp_error( $type ) ) {
+            return;
+        }
+
+        $object_id = Plugin::filter_custom_id( $type, $id );
+
+        if ( is_wp_error( $object_id ) ) {
+            return;
+        }
+
+        $this->invoke_lambda( $type, $id, esc_url( $url ) );
+    }
+
+    /**
+     * Invokes AWS Lambda function.
      *
      * @param string $type
+     * @param $id
      * @param string $url
-     * @param int    $id
      */
-    public function render( string $type, string $url, int $id = 0 ): void
-    {
-        $this->render_with_lambda( [
-            'type'          => esc_attr( $type ),
-            'id'            => absint( $id ),
-            'url'           => esc_url( $url ),
-        ] );
-    }
-
-    /**
-     * Render html markup with AWS Lambda function
-     *
-     * @param array $args
-     */
-    private function render_with_lambda( array $args ): void
+    protected function invoke_lambda( string $type, $id, string $url ) : void
     {
         $lambda = $this->get_lambda();
 
-        if( false === $secret = get_transient( 'innocode_prerender_secret' ) ) {
-            $secret = wp_generate_password( 24 );
-            set_transient( 'innocode_prerender_secret', $secret, 15 * MINUTE_IN_SECONDS );
-        }
+        $secret = wp_generate_password( 32, true, true );
+        $secret_hash = wp_hash_password( $secret );
 
-        $lambda(
-            wp_parse_args( $args, [
-                    'return_url'    => $this->rest_controller->get_return_url(),
-                    'secret'        => wp_hash_password( $secret ),
-                    'element'       => apply_filters( 'innocode_prerender_element', $this->get_element() )
-                ]
-            )
-        );
+        set_transient( "innocode_prerender_secret_$type-$id", $secret_hash, 20 * MINUTE_IN_SECONDS );
+
+        $lambda( [
+            'type'       => $type,
+            'id'         => $id,
+            'url'        => $url,
+            'selector'   => $this->get_selector(),
+            'return_url' => $this->get_return_url(),
+            'secret'     => $secret,
+        ] );
     }
 }
