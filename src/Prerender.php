@@ -243,7 +243,7 @@ class Prerender
      */
     public function schedule_term( int $term_id, string $taxonomy ) : void
     {
-        $this->schedule( Plugin::TYPE_POST, $term_id, [ $taxonomy ] );
+        $this->schedule( Plugin::TYPE_TERM, $term_id, [ $taxonomy ] );
     }
 
     /**
