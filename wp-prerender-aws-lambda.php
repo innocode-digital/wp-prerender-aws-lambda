@@ -44,7 +44,7 @@ if ( ! function_exists( 'innocode_prerender_init' ) ) {
 add_action( 'init', 'innocode_prerender_init' );
 
 if ( ! function_exists( 'innocode_prerender' ) ) {
-    function innocode_prerender() : Prerender\Plugin {
+    function innocode_prerender() : ?Prerender\Plugin {
         global $innocode_prerender;
 
         if ( is_null( $innocode_prerender ) ) {
