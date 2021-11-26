@@ -124,6 +124,8 @@ class RESTController extends WP_REST_Controller
             );
         }
 
+        delete_transient( "innocode_prerender_secret_$type-$id" );
+
         return true;
     }
 

@@ -14,7 +14,7 @@ class Db
     /**
      * @var string
      */
-    protected $table = 'prerender';
+    protected $table = 'innocode_prerender';
 
     /**
      * @param string $table

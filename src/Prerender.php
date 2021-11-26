@@ -204,6 +204,10 @@ class Prerender
      */
     public function schedule( string $type, $object_id_or_subtype = 0, array $args = [] ) : void
     {
+        if ( ! in_array( $type, Plugin::get_types(), true ) ) {
+            return;
+        }
+
         $object_id = is_int( $object_id_or_subtype ) ? $object_id_or_subtype : 0;
         $subtype = is_string( $object_id_or_subtype ) ? $object_id_or_subtype : '';
 
@@ -217,6 +221,7 @@ class Prerender
             array_unshift( $args, $subtype );
         }
 
+        wp_clear_scheduled_hook( "innocode_prerender_$type", $args );
         wp_schedule_single_event( time(), "innocode_prerender_$type", $args );
     }
 
