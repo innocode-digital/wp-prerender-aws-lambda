@@ -394,7 +394,7 @@ class Prerender
             'type'       => $type,
             'id'         => $id,
             'url'        => $url,
-            'selector'   => $this->get_selector(),
+            'element'   => $this->get_selector(), // @TODO: switch to 'selector'
             'return_url' => $this->get_return_url(),
             'secret'     => $secret,
         ] );
