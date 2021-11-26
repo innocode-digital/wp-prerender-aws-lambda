@@ -111,9 +111,8 @@ final class Plugin
      */
     public function run()
     {
-        $db = $this->get_db();
-
-        Helpers::action( 'plugins_loaded', [ $db, 'init' ] );
+        // Already in 'init' hook.
+        $this->get_db()->init();
 
         $prerender = $this->get_prerender();
 

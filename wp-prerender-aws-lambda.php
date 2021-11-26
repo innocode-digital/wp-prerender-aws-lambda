@@ -16,24 +16,32 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 
 use Innocode\Prerender;
 
-if (
-    defined( 'AWS_LAMBDA_PRERENDER_KEY' ) &&
-    defined( 'AWS_LAMBDA_PRERENDER_SECRET' ) &&
-    defined( 'AWS_LAMBDA_PRERENDER_REGION' )
-) {
-    $GLOBALS['innocode_prerender'] = new Prerender\Plugin(
-        AWS_LAMBDA_PRERENDER_KEY,
-        AWS_LAMBDA_PRERENDER_SECRET,
-        AWS_LAMBDA_PRERENDER_REGION,
-        defined( 'AWS_LAMBDA_PRERENDER_FUNCTION' )
-            ? AWS_LAMBDA_PRERENDER_FUNCTION
-            : null,
-        defined( 'AWS_LAMBDA_PRERENDER_DB_TABLE' )
-            ? AWS_LAMBDA_PRERENDER_DB_TABLE
-            : null
-    );
-    $GLOBALS['innocode_prerender']->run();
+if ( ! function_exists( 'innocode_prerender_init' ) ) {
+    function innocode_prerender_init() {
+        if (
+            ! defined( 'AWS_LAMBDA_PRERENDER_KEY' ) ||
+            ! defined( 'AWS_LAMBDA_PRERENDER_SECRET' ) ||
+            ! defined( 'AWS_LAMBDA_PRERENDER_REGION' )
+        ) {
+            return;
+        }
+
+        $GLOBALS['innocode_prerender'] = new Prerender\Plugin(
+            AWS_LAMBDA_PRERENDER_KEY,
+            AWS_LAMBDA_PRERENDER_SECRET,
+            AWS_LAMBDA_PRERENDER_REGION,
+            defined( 'AWS_LAMBDA_PRERENDER_FUNCTION' )
+                ? AWS_LAMBDA_PRERENDER_FUNCTION
+                : null,
+            defined( 'AWS_LAMBDA_PRERENDER_DB_TABLE' )
+                ? AWS_LAMBDA_PRERENDER_DB_TABLE
+                : null
+        );
+        $GLOBALS['innocode_prerender']->run();
+    }
 }
+
+add_action( 'init', 'innocode_prerender_init' );
 
 if ( ! function_exists( 'innocode_prerender' ) ) {
     function innocode_prerender() : ?Prerender\Plugin {
