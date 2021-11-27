@@ -157,7 +157,10 @@ class Prerender
         $post_type = get_post_type( $post_id );
         $post_type_archive_link = get_post_type_archive_link( $post_type );
 
-        if ( $post_type_archive_link && $post_type_archive_link != home_url() ) {
+        if (
+            $post_type_archive_link &&
+            untrailingslashit( $post_type_archive_link ) != untrailingslashit( home_url() )
+        ) {
             $this->schedule_post_type_archive( $post_type );
         }
 

@@ -27,7 +27,7 @@ class Lambda
     /**
      * @var string
      */
-    protected $function = 'prerender-production-processor';
+    protected $function = 'prerender-production-render';
     /**
      * @var LambdaClient
      */
