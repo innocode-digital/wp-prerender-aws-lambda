@@ -157,7 +157,7 @@ class Prerender
         $post_type = get_post_type( $post_id );
         $post_type_archive_link = get_post_type_archive_link( $post_type );
 
-        if ( $post_type_archive_link ) {
+        if ( $post_type_archive_link && $post_type_archive_link != home_url() ) {
             $this->schedule_post_type_archive( $post_type );
         }
 
@@ -399,7 +399,7 @@ class Prerender
             'type'       => $type,
             'id'         => $id,
             'url'        => $url,
-            'element'   => $this->get_selector(), // @TODO: switch to 'selector'
+            'selector'   => $this->get_selector(),
             'return_url' => $this->get_return_url(),
             'secret'     => $secret,
         ] );
