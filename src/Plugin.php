@@ -22,7 +22,9 @@ final class Plugin
     const TYPE_DATE_ARCHIVE = 'date_archive';
 
     /**
-     * @const array Order is important as it's used in render callback.
+     * @note Order is important as it's used in render callback.
+     *
+     * @const array
      */
     const TYPES = [
         self::TYPE_FRONTPAGE,
@@ -137,6 +139,27 @@ final class Plugin
         $rest_controller = $this->get_rest_controller();
 
         Helpers::action( 'rest_api_init', [ $rest_controller, 'register_routes' ] );
+
+        $this->add_flush_cache_actions();
+    }
+
+    public function add_flush_cache_actions()
+    {
+        $bump_html_version = [ $this->get_db()->get_html_version(), 'bump' ];
+
+        if ( function_exists( 'flush_cache_add_button' ) ) {
+            flush_cache_add_button(
+                __( 'Prerender cache', 'innocode-prerender' ),
+                $bump_html_version
+            );
+        }
+
+        if ( function_exists( 'flush_cache_add_sites_action_link' ) ) {
+            flush_cache_add_sites_action_link(
+                __( 'Prerender cache', 'innocode-prerender' ),
+                $bump_html_version
+            );
+        }
     }
 
     /**
@@ -169,7 +192,16 @@ final class Plugin
 
         list( $type, $object_id ) = $converted_type_id;
 
-        $entry = $this->get_prerender()->get_db()->get_entry( $type, $object_id );
+        $prerender = $this->get_prerender();
+        $db = $prerender->get_db();
+        $entry = $db->get_entry( $type, $object_id );
+        $html_version = $db->get_html_version();
+
+        if ( ! isset( $entry['version'] ) || $html_version() !== $entry['version'] ) {
+            $prerender->schedule( $type, $object_id );
+
+            return '';
+        }
 
         return $entry['html'] ?? '';
     }

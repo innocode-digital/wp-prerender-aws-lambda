@@ -119,7 +119,13 @@ class Prerender
             return;
         }
 
-        $this->schedule_term( $term_id, $taxonomy->name );
+        $term = get_term( $term_id, $taxonomy_name );
+
+        if ( ! $term || is_wp_error( $term ) ) {
+            return;
+        }
+
+        $this->schedule_term( $term->term_taxonomy_id );
         $this->update_term_related();
     }
 
@@ -134,11 +140,11 @@ class Prerender
     }
 
     /**
-     * @param int $term_id
+     * @param int $term_taxonomy_id
      */
-    public function delete_term( int $term_id ) : void
+    public function delete_term( int $term_taxonomy_id ) : void
     {
-        if ( $this->get_db()->delete_entry( 'term', $term_id ) ) {
+        if ( $this->get_db()->delete_entry( 'term', $term_taxonomy_id ) ) {
             $this->update_term_related();
         }
     }
@@ -188,7 +194,7 @@ class Prerender
             }
 
             foreach ( $terms as $term ) {
-                $this->schedule_term( $term->term_id, $term->taxonomy );
+                $this->schedule_term( $term->term_taxonomy_id );
             }
         }
     }
@@ -198,34 +204,6 @@ class Prerender
         $this->schedule_frontpage();
 
         // @TODO: What should we do if post shows term data e.g. name somewhere in content?
-    }
-
-    /**
-     * @param string     $type
-     * @param string|int $object_id_or_subtype
-     * @param array      $args
-     */
-    public function schedule( string $type, $object_id_or_subtype = 0, array $args = [] ) : void
-    {
-        if ( ! in_array( $type, Plugin::get_types(), true ) ) {
-            return;
-        }
-
-        $object_id = is_int( $object_id_or_subtype ) ? $object_id_or_subtype : 0;
-        $subtype = is_string( $object_id_or_subtype ) ? $object_id_or_subtype : '';
-
-        $this->get_db()->clear_entry( $type . ( $subtype ? "_$subtype" : '' ), $object_id );
-
-        if ( $object_id ) {
-            array_unshift( $args, $object_id );
-        }
-
-        if ( $subtype ) {
-            array_unshift( $args, $subtype );
-        }
-
-        wp_clear_scheduled_hook( "innocode_prerender_$type", $args );
-        wp_schedule_single_event( time(), "innocode_prerender_$type", $args );
     }
 
     /**
@@ -241,12 +219,11 @@ class Prerender
     /**
      * Prerenders Term.
      *
-     * @param int    $term_id
-     * @param string $taxonomy
+     * @param int $term_taxonomy_id
      */
-    public function schedule_term( int $term_id, string $taxonomy ) : void
+    public function schedule_term( int $term_taxonomy_id ) : void
     {
-        $this->schedule( Plugin::TYPE_TERM, $term_id, [ $taxonomy ] );
+        $this->schedule( Plugin::TYPE_TERM, $term_taxonomy_id );
     }
 
     /**
@@ -288,6 +265,37 @@ class Prerender
     }
 
     /**
+     * @param string     $type
+     * @param string|int $object_id_or_subtype
+     * @param array      $args
+     */
+    public function schedule( string $type, $object_id_or_subtype = 0, array $args = [] ) : void
+    {
+        if ( ! in_array( $type, Plugin::get_types(), true ) ) {
+            return;
+        }
+
+        $object_id = is_int( $object_id_or_subtype ) ? $object_id_or_subtype : 0;
+        $subtype = is_string( $object_id_or_subtype ) ? $object_id_or_subtype : '';
+
+        if ( $object_id ) {
+            array_unshift( $args, $object_id );
+        }
+
+        if ( $subtype ) {
+            array_unshift( $args, $subtype );
+        }
+
+        if ( wp_next_scheduled( "innocode_prerender_$type", $args ) ) {
+            return;
+        }
+
+        $this->get_db()->clear_entry( $type . ( $subtype ? "_$subtype" : '' ), $object_id );
+
+        wp_schedule_single_event( time(), "innocode_prerender_$type", $args );
+    }
+
+    /**
      * Renders Post/Page.
      *
      * @param int $post_id
@@ -299,10 +307,18 @@ class Prerender
 
     /**
      * Renders Term.
+     *
+     * @param int $term_taxonomy_id
      */
-    public function term( int $term_id, string $taxonomy ) : void
+    public function term( int $term_taxonomy_id ) : void
     {
-        $this->invoke_lambda( Plugin::TYPE_TERM, $term_id, get_term_link( $term_id, $taxonomy ) );
+        $term = get_term_by( 'term_taxonomy_id', $term_taxonomy_id );
+
+        if ( ! $term ) {
+            return;
+        }
+
+        $this->invoke_lambda( Plugin::TYPE_TERM, $term_taxonomy_id, get_term_link( $term ) );
     }
 
     /**

@@ -2,6 +2,8 @@
 
 namespace Innocode\Prerender;
 
+use WP_Term;
+
 class Query
 {
     /**
@@ -57,7 +59,7 @@ class Query
      */
     public function post_id() : int
     {
-        return get_the_ID();
+        return (int) get_the_ID();
     }
 
     /**
@@ -65,7 +67,9 @@ class Query
      */
     public function term_id() : int
     {
-        return get_queried_object_id();
+        $term = get_queried_object();
+
+        return $term instanceof WP_Term ? $term->term_taxonomy_id : 0;
     }
 
     /**

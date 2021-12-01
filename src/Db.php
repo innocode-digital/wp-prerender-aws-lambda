@@ -15,6 +15,20 @@ class Db
      * @var string
      */
     protected $table = 'innocode_prerender';
+    /**
+     * @var Version
+     */
+    protected $version;
+    /**
+     * @var Version
+     */
+    protected $html_version;
+
+    public function __construct()
+    {
+        $this->version = new Version();
+        $this->html_version = new Version();
+    }
 
     /**
      * @param string $table
@@ -33,18 +47,35 @@ class Db
     }
 
     /**
-     * @return string|null
+     * @return Version
      */
-    public function get_version() : ?string
+    public function get_version() : Version
     {
-        return get_option( 'innocode_prerender_db_version', null );
+        return $this->version;
+    }
+
+    /**
+     * @return Version
+     */
+    public function get_html_version() : Version
+    {
+        return $this->html_version;
     }
 
     public function init()
     {
-        if ( null === $this->get_version() ) {
+        $table = $this->get_table();
+
+        $version = $this->get_version();
+        $version->set_option( "{$table}_db_version" );
+
+        if ( null === $version() ) {
             $this->create_table();
         }
+
+        $html_version = $this->get_html_version();
+        $html_version->set_option( "{$table}_html_version" );
+        $html_version->init();
     }
 
     protected function create_table()
@@ -60,6 +91,7 @@ class Db
             type varchar(25) NOT NULL default '',
             object_id bigint(20) NOT NULL default 0,
             html longtext,
+            version varchar(32) NOT NULL default ''
             PRIMARY KEY (ID),
             KEY (`type`, `object_id`)
         ) $charset_collate;\n";
@@ -68,7 +100,7 @@ class Db
 
         dbDelta( $query );
 
-        update_option( 'innocode_prerender_db_version', static::VERSION );
+        $this->get_version()->update( static::VERSION );
     }
 
     /**
@@ -83,17 +115,23 @@ class Db
         global $wpdb;
 
         $now = current_time( 'mysql' );
-        $wpdb->insert(
+        $html_version = $this->get_html_version();
+        $created = (bool) $wpdb->insert(
             $wpdb->prefix . $this->get_table(),
             [
                 'created'   => $now,
                 'updated'   => $now,
                 'type'      => $type,
                 'object_id' => $object_id,
-                'html'      => $html
+                'html'      => $html,
+                'version'   => $html_version(),
             ],
-            [ '%s', '%s', '%s', '%d', '%s' ]
+            [ '%s', '%s', '%s', '%d', '%s', '%s' ]
         );
+
+        if ( $created ) {
+            wp_cache_delete( "$type:$object_id", 'innocode_prerender' );
+        }
 
         return $wpdb->insert_id;
     }
@@ -137,14 +175,16 @@ class Db
     {
         global $wpdb;
 
+        $html_version = $this->get_html_version();
         $updated = (bool) $wpdb->update(
             $wpdb->prefix . $this->get_table(),
             [
                 'updated' => current_time( 'mysql' ),
                 'html'    => $html,
+                'version' => $html_version(),
             ],
             [ 'type' => $type, 'object_id' => $object_id ],
-            [' %s', '%s' ],
+            [' %s', '%s', '%s' ],
             [ '%s', '%d' ]
         );
 
