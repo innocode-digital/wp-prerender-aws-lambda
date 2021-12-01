@@ -91,7 +91,7 @@ class Db
             type varchar(25) NOT NULL default '',
             object_id bigint(20) NOT NULL default 0,
             html longtext,
-            version varchar(32) NOT NULL default ''
+            version varchar(32) NOT NULL default '',
             PRIMARY KEY (ID),
             KEY (`type`, `object_id`)
         ) $charset_collate;\n";
