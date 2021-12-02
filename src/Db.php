@@ -159,7 +159,9 @@ class Db
         );
         $entry = $wpdb->get_row( $query, ARRAY_A );
 
-        wp_cache_set( $cache_key, $entry, 'innocode_prerender' );
+        if ( null !== $entry ) {
+            wp_cache_set( $cache_key, $entry, 'innocode_prerender' );
+        }
 
         return $entry;
     }
