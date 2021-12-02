@@ -19,7 +19,7 @@ class Query
      */
     public function is_term() : bool
     {
-        return is_tax();
+        return is_category() || is_tag() || is_tax();
     }
 
     /**
