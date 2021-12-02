@@ -79,6 +79,8 @@ class RESTController extends WP_REST_Controller
         $type = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
 
+        delete_transient( "innocode_prerender_secret_$type-$id" );
+
         $converted_type_id = Plugin::convert_type_id( $type, $id );
 
         if ( is_wp_error( $converted_type_id ) ) {
@@ -123,8 +125,6 @@ class RESTController extends WP_REST_Controller
                 [ 'status' => WP_Http::UNAUTHORIZED ]
             );
         }
-
-        delete_transient( "innocode_prerender_secret_$type-$id" );
 
         return true;
     }
