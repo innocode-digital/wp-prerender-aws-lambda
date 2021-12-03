@@ -412,15 +412,25 @@ class Prerender
         $secret = wp_generate_password( 32, true, true );
         $secret_hash = wp_hash_password( $secret );
 
-        set_transient( "innocode_prerender_secret_$type-$id", $secret_hash, 20 * MINUTE_IN_SECONDS );
+        $using_ext_object_cache = wp_using_ext_object_cache( false );
 
-        $lambda( [
-            'type'       => $type,
-            'id'         => $id,
-            'url'        => $url,
-            'selector'   => $this->get_selector(),
-            'return_url' => $this->get_return_url(),
-            'secret'     => $secret,
-        ] );
+        $secret_hash_set = set_transient(
+            "innocode_prerender_secret_$type-$id",
+            $secret_hash,
+            20 * MINUTE_IN_SECONDS
+        );
+
+        if ( $secret_hash_set ) {
+            $lambda( [
+                'type'       => $type,
+                'id'         => $id,
+                'url'        => $url,
+                'selector'   => $this->get_selector(),
+                'return_url' => $this->get_return_url(),
+                'secret'     => $secret,
+            ] );
+        }
+
+        wp_using_ext_object_cache( $using_ext_object_cache );
     }
 }

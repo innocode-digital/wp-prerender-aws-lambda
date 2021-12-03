@@ -79,7 +79,11 @@ class RESTController extends WP_REST_Controller
         $type = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
 
+        $using_ext_object_cache = wp_using_ext_object_cache( false );
+
         delete_transient( "innocode_prerender_secret_$type-$id" );
+
+        wp_using_ext_object_cache( $using_ext_object_cache );
 
         $converted_type_id = Plugin::convert_type_id( $type, $id );
 
