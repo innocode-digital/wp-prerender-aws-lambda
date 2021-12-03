@@ -120,7 +120,11 @@ class RESTController extends WP_REST_Controller
         $id = $request->get_param( 'id' );
         $secret = $request->get_param( 'secret' );
 
+        $using_ext_object_cache = wp_using_ext_object_cache( false );
+
         $secret_hash = get_transient( "innocode_prerender_secret_$type-$id" );
+
+        wp_using_ext_object_cache( $using_ext_object_cache );
 
         if ( false === $secret_hash || ! wp_check_password( $secret, $secret_hash ) ) {
             return new WP_Error(
