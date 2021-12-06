@@ -2,11 +2,6 @@
 
 namespace Innocode\Prerender;
 
-/**
- * Class Db
- *
- * @package Innocode\Prerender
- */
 class Db
 {
     const VERSION = '1.0.0';
@@ -32,6 +27,8 @@ class Db
 
     /**
      * @param string $table
+     *
+     * @return void
      */
     public function set_table( string $table ) : void
     {
@@ -62,7 +59,10 @@ class Db
         return $this->html_version;
     }
 
-    public function init()
+    /**
+     * @return void
+     */
+    public function init() : void
     {
         $table = $this->get_table();
 
@@ -78,7 +78,10 @@ class Db
         $html_version->init();
     }
 
-    protected function create_table()
+    /**
+     * @return void
+     */
+    protected function create_table() : void
     {
         global $wpdb;
 

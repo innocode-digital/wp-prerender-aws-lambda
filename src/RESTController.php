@@ -10,11 +10,6 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 
-/**
- * Class RESTController
- *
- * @package Innocode\Prerender
- */
 class RESTController extends WP_REST_Controller
 {
     use DbTrait;
@@ -29,7 +24,9 @@ class RESTController extends WP_REST_Controller
     }
 
     /**
-     * Registers REST routes to save rendered HTML from AWS Lambda
+     * Registers REST routes to save rendered HTML from AWS Lambda.
+     *
+     * @return void
      */
     public function register_routes() : void
     {
@@ -79,11 +76,7 @@ class RESTController extends WP_REST_Controller
         $type = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
 
-        $using_ext_object_cache = wp_using_ext_object_cache( false );
-
-        delete_transient( "innocode_prerender_secret_$type-$id" );
-
-        wp_using_ext_object_cache( $using_ext_object_cache );
+        SecretsManager::delete( $type, $id );
 
         $converted_type_id = Plugin::convert_type_id( $type, $id );
 
@@ -120,11 +113,7 @@ class RESTController extends WP_REST_Controller
         $id = $request->get_param( 'id' );
         $secret = $request->get_param( 'secret' );
 
-        $using_ext_object_cache = wp_using_ext_object_cache( false );
-
-        $secret_hash = get_transient( "innocode_prerender_secret_$type-$id" );
-
-        wp_using_ext_object_cache( $using_ext_object_cache );
+        $secret_hash = SecretsManager::get( $type, $id );
 
         if ( false === $secret_hash || ! wp_check_password( $secret, $secret_hash ) ) {
             return new WP_Error(

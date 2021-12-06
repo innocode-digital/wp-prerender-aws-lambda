@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AWS Lambda Prerender
  * Description: Generates HTML for posts/pages via AWS Lambda.
- * Version: 0.5.0
+ * Version: 0.6.0
  * Author: Innocode
  * Author URI: https://innocode.com
  * Tested up to: 5.8.2
@@ -16,32 +16,46 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 
 use Innocode\Prerender;
 
-if ( ! function_exists( 'innocode_prerender_init' ) ) {
-    function innocode_prerender_init() {
-        if (
-            ! defined( 'AWS_LAMBDA_PRERENDER_KEY' ) ||
-            ! defined( 'AWS_LAMBDA_PRERENDER_SECRET' ) ||
-            ! defined( 'AWS_LAMBDA_PRERENDER_REGION' )
-        ) {
-            return;
-        }
-
-        $GLOBALS['innocode_prerender'] = new Prerender\Plugin(
-            AWS_LAMBDA_PRERENDER_KEY,
-            AWS_LAMBDA_PRERENDER_SECRET,
-            AWS_LAMBDA_PRERENDER_REGION,
-            defined( 'AWS_LAMBDA_PRERENDER_FUNCTION' )
-                ? AWS_LAMBDA_PRERENDER_FUNCTION
-                : null,
-            defined( 'AWS_LAMBDA_PRERENDER_DB_TABLE' )
-                ? AWS_LAMBDA_PRERENDER_DB_TABLE
-                : null
-        );
-        $GLOBALS['innocode_prerender']->run();
-    }
+if (
+    ! defined( 'AWS_LAMBDA_PRERENDER_KEY' ) ||
+    ! defined( 'AWS_LAMBDA_PRERENDER_SECRET' ) ||
+    ! defined( 'AWS_LAMBDA_PRERENDER_REGION' )
+) {
+    return;
 }
 
-add_action( 'init', 'innocode_prerender_init' );
+$GLOBALS['innocode_prerender'] = new Prerender\Plugin(
+    AWS_LAMBDA_PRERENDER_KEY,
+    AWS_LAMBDA_PRERENDER_SECRET,
+    AWS_LAMBDA_PRERENDER_REGION
+);
+
+if ( ! defined( 'AWS_LAMBDA_PRERENDER_FUNCTION' ) ) {
+    define( 'AWS_LAMBDA_PRERENDER_FUNCTION', 'prerender-production-render' );
+}
+
+$GLOBALS['innocode_prerender']
+    ->get_prerender()
+    ->get_lambda()
+    ->set_function( AWS_LAMBDA_PRERENDER_FUNCTION );
+
+if ( ! defined( 'AWS_LAMBDA_PRERENDER_DB_TABLE' ) ) {
+    define( 'AWS_LAMBDA_PRERENDER_DB_TABLE', 'innocode_prerender' );
+}
+
+$GLOBALS['innocode_prerender']
+    ->get_db()
+    ->set_table( AWS_LAMBDA_PRERENDER_DB_TABLE );
+
+if ( ! defined( 'AWS_LAMBDA_PRERENDER_QUERY_VAR' ) ) {
+    define( 'AWS_LAMBDA_PRERENDER_QUERY_VAR', 'innocode_prerender' );
+}
+
+$GLOBALS['innocode_prerender']
+    ->get_query()
+    ->set_name( AWS_LAMBDA_PRERENDER_QUERY_VAR );
+
+$GLOBALS['innocode_prerender']->run();
 
 if ( ! function_exists( 'innocode_prerender' ) ) {
     function innocode_prerender() : ?Prerender\Plugin {

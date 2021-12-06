@@ -5,11 +5,6 @@ namespace Innocode\Prerender;
 use Aws\Lambda\LambdaClient;
 use Aws\Result;
 
-/**
- * Class Lambda
- *
- * @package Innocode\Prerender
- */
 class Lambda
 {
     /**
@@ -27,7 +22,7 @@ class Lambda
     /**
      * @var string
      */
-    protected $function = 'prerender-production-render';
+    protected $function;
     /**
      * @var LambdaClient
      */
@@ -73,8 +68,10 @@ class Lambda
 
     /**
      * @param string $function
+     *
+     * @return void
      */
-    public function set_function( string $function )
+    public function set_function( string $function ) : void
     {
         $this->function = $function;
     }
@@ -99,7 +96,10 @@ class Lambda
         return $this->client;
     }
 
-    public function init()
+    /**
+     * @return void
+     */
+    public function init() : void
     {
         $this->client = new LambdaClient( [
             'credentials' => [

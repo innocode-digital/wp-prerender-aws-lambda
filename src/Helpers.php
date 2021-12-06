@@ -5,24 +5,21 @@ namespace Innocode\Prerender;
 use ReflectionException;
 use ReflectionMethod;
 
-/**
- * Class Tools
- *
- * @package Innocode\Prerender
- */
 class Helpers
 {
     /**
-     * @param string $hook
+     * @param string $name
      * @param array  $callback
      * @param int    $priority
+     *
+     * @return void
      */
-    public static function action( string $hook, array $callback, int $priority = 10 )
+    public static function hook( string $name, array $callback, int $priority = 10 ) : void
     {
         try {
             $method = new ReflectionMethod( $callback[0], $callback[1] );
 
-            add_action( $hook, $callback, $priority, $method->getNumberOfParameters() );
+            add_filter( $name, $callback, $priority, $method->getNumberOfParameters() );
         } catch ( ReflectionException $exception ) {}
     }
 

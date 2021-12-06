@@ -11,8 +11,10 @@ class Version
 
     /**
      * @param string $option
+     *
+     * @return void
      */
-    public function set_option( string $option )
+    public function set_option( string $option ) : void
     {
         $this->option = $option;
     }
@@ -25,24 +27,34 @@ class Version
         return $this->option;
     }
 
-    public function init()
+    /**
+     * @return bool
+     */
+    public function init() : bool
     {
-        if ( null === $this() ) {
-            $this->bump();
+        if ( null !== $this() ) {
+            return false;
         }
+
+        return $this->bump();
     }
 
-    public function bump()
+    /**
+     * @return bool
+     */
+    public function bump() : bool
     {
-        $this->update( static::generate() );
+        return $this->update( static::generate() );
     }
 
     /**
      * @param string $value
+     *
+     * @return bool
      */
-    public function update( string $value )
+    public function update( string $value ) : bool
     {
-        update_option( $this->get_option(), $value );
+        return update_option( $this->get_option(), $value );
     }
 
     /**

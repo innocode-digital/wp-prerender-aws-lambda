@@ -5,11 +5,6 @@ namespace Innocode\Prerender;
 use Innocode\Prerender\Traits\DbTrait;
 use WP_Error;
 
-/**
- * Class Plugin
- *
- * @package Innocode\Prerender
- */
 final class Plugin
 {
     use DbTrait;
@@ -51,31 +46,17 @@ final class Plugin
     /**
      * Plugin constructor.
      *
-     * @param string      $key
-     * @param string      $secret
-     * @param string      $region
-     * @param string|null $function
-     * @param string|null $db_table
+     * @param string $key
+     * @param string $secret
+     * @param string $region
      */
-    public function __construct(
-        string $key,
-        string $secret,
-        string $region,
-        string $function = null,
-        string $db_table = null
-    )
+    public function __construct( string $key, string $secret, string $region )
     {
         $db = new Db();
-
-        if ( null !== $db_table ) {
-            $db->set_table( $db_table );
-        }
-
-        $prerender = new Prerender( $key, $secret, $region, $function );
+        $prerender = new Prerender( $key, $secret, $region );
         $rest_controller = new RESTController();
 
         $prerender->set_db( $db );
-        $prerender->set_return_url( $rest_controller->url() );
         $rest_controller->set_db( $db );
 
         $this->db = $db;
@@ -110,40 +91,30 @@ final class Plugin
 
     /**
      * Hooks registration.
+     *
+     * @return void
      */
-    public function run()
+    public function run() : void
     {
-        // Already in 'init' hook.
-        $this->get_db()->init();
+        Helpers::hook( 'plugins_loaded', [ $this, 'add_flush_cache_actions' ] );
+        Helpers::hook( 'query_vars', [ $this->get_query(), 'add_query_vars' ] );
+        Helpers::hook( 'init', [ $this->get_db(), 'init' ] );
+        Helpers::hook( 'init', [ $this, 'init' ] );
+        Helpers::hook( 'rest_api_init', [ $this->get_rest_controller(), 'register_routes' ] );
+        Helpers::hook( 'wp_head', [ $this, 'print_scripts' ], 1 );
 
         $prerender = $this->get_prerender();
 
-        Helpers::action( 'transition_post_status', [ $prerender, 'update_post' ] );
-        Helpers::action( 'delete_post', [ $prerender, 'delete_post' ] );
-        Helpers::action( 'saved_term', [ $prerender, 'update_term' ] );
-        Helpers::action( 'delete_term', [ $prerender, 'delete_term' ] );
-
-        $query = $this->get_query();
-
-        foreach ( Plugin::get_types() as $type ) {
-            if ( in_array( $type, Plugin::TYPES, true ) ) {
-                Helpers::action( "innocode_prerender_$type", [ $prerender, $type ] );
-
-                Helpers::action( "innocode_prerender_is_$type", [ $query, "is_$type" ] );
-                Helpers::action( "innocode_prerender_{$type}_id", [ $query, "{$type}_id" ] );
-            } else {
-                Helpers::action( 'innocode_prerender_custom_type', [ $prerender, 'custom_type' ] );
-            }
-        }
-
-        $rest_controller = $this->get_rest_controller();
-
-        Helpers::action( 'rest_api_init', [ $rest_controller, 'register_routes' ] );
-
-        $this->add_flush_cache_actions();
+        Helpers::hook( 'transition_post_status', [ $prerender, 'update_post' ] );
+        Helpers::hook( 'delete_post', [ $prerender, 'delete_post' ] );
+        Helpers::hook( 'saved_term', [ $prerender, 'update_term' ] );
+        Helpers::hook( 'delete_term', [ $prerender, 'delete_term' ] );
     }
 
-    public function add_flush_cache_actions()
+    /**
+     * @return void
+     */
+    public function add_flush_cache_actions() : void
     {
         $bump_html_version = [ $this->get_db()->get_html_version(), 'bump' ];
 
@@ -163,11 +134,51 @@ final class Plugin
     }
 
     /**
+     * @return void
+     */
+    public function init() : void
+    {
+        $prerender = $this->get_prerender();
+        $rest_controller = $this->get_rest_controller();
+        $query = $this->get_query();
+
+        $prerender->set_return_url( $rest_controller->url() );
+        $prerender->set_query_var( $query->get_name() );
+
+        foreach ( Plugin::get_types() as $type ) {
+            if ( in_array( $type, Plugin::TYPES, true ) ) {
+                Helpers::hook( "innocode_prerender_$type", [ $prerender, $type ] );
+
+                Helpers::hook( "innocode_prerender_is_$type", [ $query, "is_$type" ] );
+                Helpers::hook( "innocode_prerender_{$type}_id", [ $query, "{$type}_id" ] );
+            } else {
+                Helpers::hook( 'innocode_prerender_custom_type', [ $prerender, 'custom_type' ] );
+            }
+        }
+    }
+
+    /**
      * @return array
      */
     public static function get_types() : array
     {
         return apply_filters( 'innocode_prerender_types', Plugin::TYPES );
+    }
+
+    /**
+     * @return void
+     */
+    public function render() : void
+    {
+        foreach ( Plugin::get_types() as $type ) {
+            if ( apply_filters( "innocode_prerender_is_$type", false ) ) {
+                $id = apply_filters( "innocode_prerender_{$type}_id", 0 );
+
+                echo $this->get_html( $type, $id );
+
+                break;
+            }
+        }
     }
 
     /**
@@ -204,19 +215,6 @@ final class Plugin
         }
 
         return $entry['html'] ?? '';
-    }
-
-    public function render()
-    {
-        foreach ( Plugin::get_types() as $type ) {
-            if ( apply_filters( "innocode_prerender_is_$type", false ) ) {
-                $id = apply_filters( "innocode_prerender_{$type}_id", 0 );
-
-                echo $this->get_html( $type, $id );
-
-                break;
-            }
-        }
     }
 
     /**
@@ -316,5 +314,25 @@ final class Plugin
         );
 
         return apply_filters( 'innocode_prerender_custom_id', $object_id, $type, $id );
+    }
+
+    /**
+     * @return void
+     */
+    public function print_scripts() : void
+    {
+        if ( ! $this->is_prerender() ) {
+            return;
+        }
+
+        echo "<script>window.__INNOCODE_PRERENDER__ = true;</script>\n";
+    }
+
+    /**
+     * @return bool
+     */
+    public function is_prerender() : bool
+    {
+        return $this->get_query()->is_var_exists();
     }
 }

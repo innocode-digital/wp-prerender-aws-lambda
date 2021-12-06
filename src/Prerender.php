@@ -5,11 +5,6 @@ namespace Innocode\Prerender;
 use Innocode\Prerender\Traits\DbTrait;
 use WP_Post;
 
-/**
- * Class Prerender
- *
- * @package Innocode\Prerender
- */
 class Prerender
 {
     use DbTrait;
@@ -26,6 +21,10 @@ class Prerender
      * @var string
      */
     protected $return_url;
+    /**
+     * @var string
+     */
+    protected $query_var;
 
     /**
      * Prerender constructor.
@@ -67,8 +66,10 @@ class Prerender
 
     /**
      * @param string $return_url
+     *
+     * @return void
      */
-    public function set_return_url( string $return_url )
+    public function set_return_url( string $return_url ) : void
     {
         $this->return_url = $return_url;
     }
@@ -82,11 +83,31 @@ class Prerender
     }
 
     /**
+     * @param string $query_var
+     *
+     * @return void
+     */
+    public function set_query_var( string $query_var ) : void
+    {
+        $this->query_var = $query_var;
+    }
+
+    /**
+     * @return string
+     */
+    public function get_query_var() : string
+    {
+        return $this->query_var;
+    }
+
+    /**
      * Updates Post/Page HTML.
      *
-     * @param string $new_status
-     * @param string $old_status
+     * @param string  $new_status
+     * @param string  $old_status
      * @param WP_Post $post
+     *
+     * @return void
      */
     public function update_post( string $new_status, string $old_status, WP_Post $post ) : void
     {
@@ -110,6 +131,8 @@ class Prerender
      * @param int    $term_id
      * @param int    $tt_id
      * @param string $taxonomy_name
+     *
+     * @return void
      */
     public function update_term( int $term_id, int $tt_id, string $taxonomy_name ) : void
     {
@@ -119,18 +142,14 @@ class Prerender
             return;
         }
 
-        $term = get_term( $term_id, $taxonomy_name );
-
-        if ( ! $term || is_wp_error( $term ) ) {
-            return;
-        }
-
-        $this->schedule_term( $term->term_taxonomy_id );
-        $this->update_term_related();
+        $this->schedule_term( $tt_id );
+        $this->update_term_related( $tt_id );
     }
 
     /**
      * @param int $post_id
+     *
+     * @return void
      */
     public function delete_post( int $post_id ) : void
     {
@@ -141,16 +160,20 @@ class Prerender
 
     /**
      * @param int $term_taxonomy_id
+     *
+     * @return void
      */
     public function delete_term( int $term_taxonomy_id ) : void
     {
         if ( $this->get_db()->delete_entry( 'term', $term_taxonomy_id ) ) {
-            $this->update_term_related();
+            $this->update_term_related( $term_taxonomy_id );
         }
     }
 
     /**
      * @param int $post_id
+     *
+     * @return void
      */
     public function update_post_related( int $post_id ) : void
     {
@@ -199,7 +222,12 @@ class Prerender
         }
     }
 
-    public function update_term_related() : void
+    /**
+     * @param int $term_taxonomy_id
+     *
+     * @return void
+     */
+    public function update_term_related( int $term_taxonomy_id ) : void
     {
         $this->schedule_frontpage();
 
@@ -210,6 +238,8 @@ class Prerender
      * Prerenders Post/Page.
      *
      * @param int $post_id
+     *
+     * @return void
      */
     public function schedule_post( int $post_id ) : void
     {
@@ -220,6 +250,8 @@ class Prerender
      * Prerenders Term.
      *
      * @param int $term_taxonomy_id
+     *
+     * @return void
      */
     public function schedule_term( int $term_taxonomy_id ) : void
     {
@@ -230,6 +262,8 @@ class Prerender
      * Prerenders Author Page.
      *
      * @param int $user_id
+     *
+     * @return void
      */
     public function schedule_author( int $user_id ) : void
     {
@@ -238,6 +272,8 @@ class Prerender
 
     /**
      * Prerenders Frontpage.
+     *
+     * @return void
      */
     public function schedule_frontpage() : void
     {
@@ -248,6 +284,8 @@ class Prerender
      * Prerenders Post Type Archive.
      *
      * @param string $post_type
+     *
+     * @return void
      */
     public function schedule_post_type_archive( string $post_type ) : void
     {
@@ -258,6 +296,8 @@ class Prerender
      * Prerenders Date Archive.
      *
      * @param string $date
+     *
+     * @return void
      */
     public function schedule_date_archive( string $date ) : void
     {
@@ -268,6 +308,8 @@ class Prerender
      * @param string     $type
      * @param string|int $object_id_or_subtype
      * @param array      $args
+     *
+     * @return void
      */
     public function schedule( string $type, $object_id_or_subtype = 0, array $args = [] ) : void
     {
@@ -299,6 +341,8 @@ class Prerender
      * Renders Post/Page.
      *
      * @param int $post_id
+     *
+     * @return void
      */
     public function post( int $post_id ) : void
     {
@@ -309,6 +353,8 @@ class Prerender
      * Renders Term.
      *
      * @param int $term_taxonomy_id
+     *
+     * @return void
      */
     public function term( int $term_taxonomy_id ) : void
     {
@@ -325,6 +371,8 @@ class Prerender
      * Renders Author Page.
      *
      * @param int $user_id
+     *
+     * @return void
      */
     public function author( int $user_id ) : void
     {
@@ -333,6 +381,8 @@ class Prerender
 
     /**
      * Renders Frontpage.
+     *
+     * @return void
      */
     public function frontpage() : void
     {
@@ -343,6 +393,8 @@ class Prerender
      * Renders Post Type Archive.
      *
      * @param string $post_type
+     *
+     * @return void
      */
     public function post_type_archive( string $post_type ) : void
     {
@@ -353,6 +405,8 @@ class Prerender
      * Renders Year, Month, Day Archives.
      *
      * @param string $date
+     *
+     * @return void
      */
     public function date_archive( string $date ) : void
     {
@@ -380,6 +434,8 @@ class Prerender
      * @param string     $type
      * @param string|int $id
      * @param string     $url
+     *
+     * @return void
      */
     public function custom_type( string $type, $id, string $url ) : void
     {
@@ -404,33 +460,23 @@ class Prerender
      * @param string $type
      * @param $id
      * @param string $url
+     *
+     * @return void
      */
     protected function invoke_lambda( string $type, $id, string $url ) : void
     {
-        $lambda = $this->get_lambda();
+        list( $is_secret_set, $secret ) = SecretsManager::init( $type, (string) $id );
 
-        $secret = wp_generate_password( 32, true, true );
-        $secret_hash = wp_hash_password( $secret );
-
-        $using_ext_object_cache = wp_using_ext_object_cache( false );
-
-        $secret_hash_set = set_transient(
-            "innocode_prerender_secret_$type-$id",
-            $secret_hash,
-            20 * MINUTE_IN_SECONDS
-        );
-
-        if ( $secret_hash_set ) {
+        if ( $is_secret_set ) {
+            $lambda = $this->get_lambda();
             $lambda( [
                 'type'       => $type,
                 'id'         => $id,
-                'url'        => $url,
+                'url'        => add_query_arg( $this->get_query_var(), 'true', $url ),
                 'selector'   => $this->get_selector(),
                 'return_url' => $this->get_return_url(),
                 'secret'     => $secret,
             ] );
         }
-
-        wp_using_ext_object_cache( $using_ext_object_cache );
     }
 }

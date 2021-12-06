@@ -13,8 +13,10 @@ trait DbTrait
 
     /**
      * @param Db $db
+     *
+     * @return void
      */
-    public function set_db( Db $db )
+    public function set_db( Db $db ) : void
     {
         $this->db = $db;
     }

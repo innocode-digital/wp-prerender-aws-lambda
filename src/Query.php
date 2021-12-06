@@ -7,6 +7,49 @@ use WP_Term;
 class Query
 {
     /**
+     * @var string
+     */
+    protected $name;
+
+    /**
+     * @param string $name
+     *
+     * @return void
+     */
+    public function set_name( string $name ) : void
+    {
+        $this->name = $name;
+    }
+
+    /**
+     * @return string
+     */
+    public function get_name() : string
+    {
+        return $this->name;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function is_var_exists() : ?string
+    {
+        return null !== get_query_var( $this->get_name(), null );
+    }
+
+    /**
+     * @param array $public_query_vars
+     *
+     * @return array
+     */
+    public function add_query_vars( array $public_query_vars ) : array
+    {
+        $public_query_vars[] = $this->get_name();
+
+        return $public_query_vars;
+    }
+
+    /**
      * @return bool
      */
     public function is_post() : bool
