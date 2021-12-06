@@ -74,7 +74,8 @@ class SecretsManager
     {
         $using_ext_object_cache = wp_using_ext_object_cache( false );
 
-        $result = "{$method}_transient"( static::key( $type, $id ), ...$args );
+        $function = "{$method}_transient";
+        $result = $function( static::key( $type, $id ), ...$args );
 
         wp_using_ext_object_cache( $using_ext_object_cache );
 

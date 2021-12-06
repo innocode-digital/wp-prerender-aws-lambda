@@ -177,18 +177,23 @@ class Prerender
      */
     public function update_post_related( int $post_id ) : void
     {
-        $this->schedule_frontpage();
+        if ( $this->should_update_post_related( $post_id, Plugin::TYPE_FRONTPAGE ) ) {
+            $this->schedule_frontpage();
+        }
 
         $user_id = get_post_field( 'post_author', $post_id );
 
-        $this->schedule_author( $user_id );
+        if ( $this->should_update_post_related( $post_id, Plugin::TYPE_AUTHOR, $user_id ) ) {
+            $this->schedule_author( $user_id );
+        }
 
         $post_type = get_post_type( $post_id );
         $post_type_archive_link = get_post_type_archive_link( $post_type );
 
         if (
             $post_type_archive_link &&
-            untrailingslashit( $post_type_archive_link ) != untrailingslashit( home_url() )
+            untrailingslashit( $post_type_archive_link ) != untrailingslashit( home_url() ) &&
+            $this->should_update_post_related( $post_id, Plugin::TYPE_POST_TYPE_ARCHIVE, $post_type )
         ) {
             $this->schedule_post_type_archive( $post_type );
         }
@@ -198,9 +203,11 @@ class Prerender
             $month = get_the_date( 'm', $post_id );
             $day = get_the_date( 'd', $post_id );
 
-            $this->schedule_date_archive( $year );
-            $this->schedule_date_archive( $year . $month );
-            $this->schedule_date_archive( $year . $month . $day );
+            if ( $this->should_update_post_related( $post_id, Plugin::TYPE_DATE_ARCHIVE, $year . $month . $day ) ) {
+                $this->schedule_date_archive( $year );
+                $this->schedule_date_archive( $year . $month );
+                $this->schedule_date_archive( $year . $month . $day );
+            }
         }
 
         foreach( get_post_taxonomies( $post_id ) as $taxonomy_name ) {
@@ -217,7 +224,9 @@ class Prerender
             }
 
             foreach ( $terms as $term ) {
-                $this->schedule_term( $term->term_taxonomy_id );
+                if ( $this->should_update_post_related( $post_id, Plugin::TYPE_TERM, $term->term_taxonomy_id ) ) {
+                    $this->schedule_term( $term->term_taxonomy_id );
+                }
             }
         }
     }
@@ -229,9 +238,48 @@ class Prerender
      */
     public function update_term_related( int $term_taxonomy_id ) : void
     {
-        $this->schedule_frontpage();
+        if ( $this->should_update_term_related( $term_taxonomy_id, Plugin::TYPE_FRONTPAGE ) ) {
+            $this->schedule_frontpage();
+        }
 
         // @TODO: What should we do if post shows term data e.g. name somewhere in content?
+    }
+
+    /**
+     * @param int        $post_id
+     * @param string     $related
+     * @param string|int $id
+     *
+     * @return bool
+     */
+    public function should_update_post_related( int $post_id, string $related, $id = 0 ) : bool
+    {
+        return $this->should_update_related( Plugin::TYPE_POST, $post_id, $related, $id );
+    }
+
+    /**
+     * @param int        $term_taxonomy_id
+     * @param string     $related
+     * @param string|int $id
+     *
+     * @return bool
+     */
+    public function should_update_term_related( int $term_taxonomy_id, string $related, $id = 0 ) : bool
+    {
+        return $this->should_update_related( Plugin::TYPE_TERM, $term_taxonomy_id, $related, $id );
+    }
+
+    /**
+     * @param string     $type
+     * @param int        $object_id
+     * @param string     $related
+     * @param string|int $id
+     *
+     * @return bool
+     */
+    public function should_update_related( string $type, int $object_id, string $related, $id ) : bool
+    {
+        return (bool) apply_filters( "innocode_prerender_should_update_{$type}_$related", true, $object_id, $id );
     }
 
     /**
