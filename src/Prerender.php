@@ -29,23 +29,13 @@ class Prerender
     /**
      * Prerender constructor.
      *
-     * @param string      $key
-     * @param string      $secret
-     * @param string      $region
-     * @param string|null $function
+     * @param string $key
+     * @param string $secret
+     * @param string $region
      */
-    public function __construct(
-        string $key,
-        string $secret,
-        string $region,
-        string $function = null
-    )
+    public function __construct( string $key, string $secret, string $region )
     {
         $this->lambda = new Lambda( $key, $secret, $region );
-
-        if ( null !== $function ) {
-            $this->lambda->set_function( $function );
-        }
     }
 
     /**

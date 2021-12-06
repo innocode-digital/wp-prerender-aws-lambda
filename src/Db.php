@@ -9,7 +9,7 @@ class Db
     /**
      * @var string
      */
-    protected $table = 'innocode_prerender';
+    protected $table;
     /**
      * @var Version
      */
