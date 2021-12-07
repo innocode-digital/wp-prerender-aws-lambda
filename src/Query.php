@@ -30,23 +30,11 @@ class Query
     }
 
     /**
-     * @return string|null
+     * @return bool
      */
-    public function is_var_exists() : ?string
+    public function is_exists() : bool
     {
-        return null !== get_query_var( $this->get_name(), null );
-    }
-
-    /**
-     * @param array $public_query_vars
-     *
-     * @return array
-     */
-    public function add_query_vars( array $public_query_vars ) : array
-    {
-        $public_query_vars[] = $this->get_name();
-
-        return $public_query_vars;
+        return ! empty( $_GET[ $this->get_name() ] );
     }
 
     /**

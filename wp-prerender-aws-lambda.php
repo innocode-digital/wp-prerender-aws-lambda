@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: AWS Lambda Prerender
+ * Plugin Name: Prerender
  * Description: Generates HTML for posts/pages via AWS Lambda.
- * Version: 0.6.0
+ * Version: 0.7.0
  * Author: Innocode
  * Author URI: https://innocode.com
  * Tested up to: 5.8.2
@@ -47,13 +47,13 @@ $GLOBALS['innocode_prerender']
     ->get_db()
     ->set_table( AWS_LAMBDA_PRERENDER_DB_TABLE );
 
-if ( ! defined( 'AWS_LAMBDA_PRERENDER_QUERY_VAR' ) ) {
-    define( 'AWS_LAMBDA_PRERENDER_QUERY_VAR', 'innocode_prerender' );
+if ( ! defined( 'AWS_LAMBDA_PRERENDER_QUERY_ARG' ) ) {
+    define( 'AWS_LAMBDA_PRERENDER_QUERY_ARG', 'innocode_prerender' );
 }
 
 $GLOBALS['innocode_prerender']
     ->get_query()
-    ->set_name( AWS_LAMBDA_PRERENDER_QUERY_VAR );
+    ->set_name( AWS_LAMBDA_PRERENDER_QUERY_ARG );
 
 $GLOBALS['innocode_prerender']->run();
 

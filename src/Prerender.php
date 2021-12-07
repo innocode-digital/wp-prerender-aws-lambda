@@ -24,7 +24,7 @@ class Prerender
     /**
      * @var string
      */
-    protected $query_var;
+    protected $query_arg;
 
     /**
      * Prerender constructor.
@@ -73,21 +73,21 @@ class Prerender
     }
 
     /**
-     * @param string $query_var
+     * @param string $query_arg
      *
      * @return void
      */
-    public function set_query_var( string $query_var ) : void
+    public function set_query_arg( string $query_arg ) : void
     {
-        $this->query_var = $query_var;
+        $this->query_arg = $query_arg;
     }
 
     /**
      * @return string
      */
-    public function get_query_var() : string
+    public function get_query_arg() : string
     {
-        return $this->query_var;
+        return $this->query_arg;
     }
 
     /**
@@ -510,7 +510,7 @@ class Prerender
             $lambda( [
                 'type'       => $type,
                 'id'         => $id,
-                'url'        => add_query_arg( $this->get_query_var(), 'true', $url ),
+                'url'        => add_query_arg( $this->get_query_arg(), 'true', $url ),
                 'selector'   => $this->get_selector(),
                 'return_url' => $this->get_return_url(),
                 'secret'     => $secret,

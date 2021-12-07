@@ -27,6 +27,17 @@ class SecretsManager
     }
 
     /**
+     * @return array
+     */
+    public static function generate() : array
+    {
+        $secret = wp_generate_password( 32, true, true );
+        $hash = wp_hash_password( $secret );
+
+        return [ $secret, $hash ];
+    }
+
+    /**
      * @param string $type
      * @param string $id
      * @param string $hash
@@ -94,13 +105,17 @@ class SecretsManager
     }
 
     /**
-     * @return array
+     * @return bool
      */
-    public static function generate() : array
+    public static function flush() : bool
     {
-        $secret = wp_generate_password( 32, true, true );
-        $hash = wp_hash_password( $secret );
+        global $wpdb;
 
-        return [ $secret, $hash ];
+        return (bool) $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM $wpdb->options WHERE option_name LIKE %s",
+                $wpdb->esc_like( '_transient_' . static::PREFIX ) . '%'
+            )
+        );
     }
 }

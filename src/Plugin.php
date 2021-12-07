@@ -97,7 +97,6 @@ final class Plugin
     public function run() : void
     {
         Helpers::hook( 'plugins_loaded', [ $this, 'add_flush_cache_actions' ] );
-        Helpers::hook( 'query_vars', [ $this->get_query(), 'add_query_vars' ] );
         Helpers::hook( 'init', [ $this->get_db(), 'init' ] );
         Helpers::hook( 'init', [ $this, 'init' ] );
         Helpers::hook( 'rest_api_init', [ $this->get_rest_controller(), 'register_routes' ] );
@@ -117,11 +116,16 @@ final class Plugin
     public function add_flush_cache_actions() : void
     {
         $bump_html_version = [ $this->get_db()->get_html_version(), 'bump' ];
+        $flush_secrets = [ SecretsManager::class, 'flush' ];
 
         if ( function_exists( 'flush_cache_add_button' ) ) {
             flush_cache_add_button(
                 __( 'Prerender cache', 'innocode-prerender' ),
                 $bump_html_version
+            );
+            flush_cache_add_button(
+                __( 'Prerender secrets', 'innocode-prerender' ),
+                $flush_secrets
             );
         }
 
@@ -129,6 +133,10 @@ final class Plugin
             flush_cache_add_sites_action_link(
                 __( 'Prerender cache', 'innocode-prerender' ),
                 $bump_html_version
+            );
+            flush_cache_add_sites_action_link(
+                __( 'Prerender secrets', 'innocode-prerender' ),
+                $flush_secrets
             );
         }
     }
@@ -143,7 +151,7 @@ final class Plugin
         $query = $this->get_query();
 
         $prerender->set_return_url( $rest_controller->url() );
-        $prerender->set_query_var( $query->get_name() );
+        $prerender->set_query_arg( $query->get_name() );
 
         foreach ( Plugin::get_types() as $type ) {
             if ( in_array( $type, Plugin::TYPES, true ) ) {
@@ -333,6 +341,6 @@ final class Plugin
      */
     public function is_prerender() : bool
     {
-        return $this->get_query()->is_var_exists();
+        return $this->get_query()->is_exists();
     }
 }
