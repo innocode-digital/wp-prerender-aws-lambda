@@ -1,8 +1,8 @@
 {
     "name": "innocode-digital/wp-prerender-aws-lambda",
-    "version": "0.4.0",
+    "version": "1.0.0",
     "type": "wordpress-plugin",
-    "description": "Generates HTML for posts/pages via AWS Lambda.",
+    "description": "Generates HTML for client-side rendered content via AWS Lambda.",
     "license": "GPL-2.0+",
     "keywords": [
         "wordpress",
@@ -18,6 +18,10 @@
         {
             "name": "Oleksandr Zhyian",
             "email": "zhiyan.olexandr@gmail.com"
+        },
+        {
+            "name": "Viktor Kuliebiakin",
+            "email": "kuliebiakin@gmail.com"
         }
     ],
     "require": {

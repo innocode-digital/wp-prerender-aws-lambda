@@ -267,8 +267,14 @@ class Prerender
      *
      * @return bool
      */
-    public function should_update_related( string $type, int $object_id, string $related, $id ) : bool
+    public function should_update_related( string $type, int $object_id, string $related, $id = 0 ) : bool
     {
+        $types = Plugin::get_types();
+
+        if ( ! in_array( $type, $types, true ) || ! in_array( $related, $types, true ) ) {
+            return false;
+        }
+
         return (bool) apply_filters( "innocode_prerender_should_update_{$type}_$related", true, $object_id, $id );
     }
 

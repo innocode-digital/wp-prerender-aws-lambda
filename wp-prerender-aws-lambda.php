@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Prerender
- * Description: Generates HTML for posts/pages via AWS Lambda.
- * Version: 0.7.0
+ * Plugin Name: AWS Lambda Prerender
+ * Description: Generates HTML for client-side rendered content via AWS Lambda.
+ * Version: 1.0.0
  * Author: Innocode
  * Author URI: https://innocode.com
  * Tested up to: 5.8.2

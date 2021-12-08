@@ -65,6 +65,32 @@ class RESTController extends WP_REST_Controller
     }
 
     /**
+     * Checks permissions to save post meta.
+     *
+     * @param WP_REST_Request $request
+     *
+     * @return bool|WP_Error
+     */
+    public function save_item_permissions_check( WP_REST_Request $request )
+    {
+        $type = $request->get_param( 'type' );
+        $id = $request->get_param( 'id' );
+        $secret = $request->get_param( 'secret' );
+
+        $secret_hash = SecretsManager::get( $type, $id );
+
+        if ( false === $secret_hash || ! wp_check_password( $secret, $secret_hash ) ) {
+            return new WP_Error(
+                'rest_innocode_prerender_cannot_save_html',
+                __( 'Sorry, you are not allowed to save prerender HTML.', 'innocode-prerender' ),
+                [ 'status' => WP_Http::UNAUTHORIZED ]
+            );
+        }
+
+        return true;
+    }
+
+    /**
      * Saves rendered HTML.
      *
      * @param WP_REST_Request $request
@@ -98,32 +124,6 @@ class RESTController extends WP_REST_Controller
             $result,
             $result ? $success_status : WP_Http::INTERNAL_SERVER_ERROR
         );
-    }
-
-    /**
-     * Checks permissions to save post meta.
-     *
-     * @param WP_REST_Request $request
-     *
-     * @return bool|WP_Error
-     */
-    public function save_item_permissions_check( WP_REST_Request $request )
-    {
-        $type = $request->get_param( 'type' );
-        $id = $request->get_param( 'id' );
-        $secret = $request->get_param( 'secret' );
-
-        $secret_hash = SecretsManager::get( $type, $id );
-
-        if ( false === $secret_hash || ! wp_check_password( $secret, $secret_hash ) ) {
-            return new WP_Error(
-                'rest_innocode_prerender_cannot_save_html',
-                __( 'Sorry, you are not allowed to save prerender HTML.', 'innocode-prerender' ),
-                [ 'status' => WP_Http::UNAUTHORIZED ]
-            );
-        }
-
-        return true;
     }
 
     /**

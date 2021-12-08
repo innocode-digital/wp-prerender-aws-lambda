@@ -120,7 +120,7 @@ final class Plugin
 
         if ( function_exists( 'flush_cache_add_button' ) ) {
             flush_cache_add_button(
-                __( 'Prerender cache', 'innocode-prerender' ),
+                __( 'Prerender version', 'innocode-prerender' ),
                 $bump_html_version
             );
             flush_cache_add_button(
@@ -131,7 +131,7 @@ final class Plugin
 
         if ( function_exists( 'flush_cache_add_sites_action_link' ) ) {
             flush_cache_add_sites_action_link(
-                __( 'Prerender cache', 'innocode-prerender' ),
+                __( 'Prerender version', 'innocode-prerender' ),
                 $bump_html_version
             );
             flush_cache_add_sites_action_link(
@@ -312,7 +312,7 @@ final class Plugin
      * @param string     $type
      * @param string|int $id
      *
-     * @return string|int|WP_Error
+     * @return int|WP_Error
      */
     public static function filter_custom_id( string $type, $id )
     {
@@ -329,18 +329,10 @@ final class Plugin
      */
     public function print_scripts() : void
     {
-        if ( ! $this->is_prerender() ) {
+        if ( ! $this->get_query()->is_exists() ) {
             return;
         }
 
         echo "<script>window.__INNOCODE_PRERENDER__ = true;</script>\n";
-    }
-
-    /**
-     * @return bool
-     */
-    public function is_prerender() : bool
-    {
-        return $this->get_query()->is_exists();
     }
 }
