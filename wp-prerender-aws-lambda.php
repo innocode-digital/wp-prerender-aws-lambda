@@ -1,58 +1,73 @@
 <?php
 /**
- * Plugin Name: WP Prerender AWS Lambda
- * Description: Generates HTML for WordPress pages/posts via AWS Lambda
- * Version: 0.3.0
+ * Plugin Name: AWS Lambda Prerender
+ * Description: Generates HTML for client-side rendered content via AWS Lambda.
+ * Version: 1.0.0
  * Author: Innocode
  * Author URI: https://innocode.com
- * Requires at least: 5.4.2
- * Tested up to: 5.8.1
+ * Tested up to: 5.8.2
  * License: GPLv2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
  */
-
-define( 'WP_PRERENDER_VERSION', '0.0.3' );
 
 if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
     require_once __DIR__ . '/vendor/autoload.php';
 }
 
-if ( ! function_exists( 'innocode_wp_prerender_aws_lambda_init' ) ) {
-    function innocode_wp_prerender_aws_lambda_init() {
-        if (
-            ! defined( 'AWS_LAMBDA_WP_PRERENDER_KEY' ) ||
-            ! defined( 'AWS_LAMBDA_WP_PRERENDER_SECRET' ) ||
-            ! defined( 'AWS_LAMBDA_WP_PRERENDER_REGION' ) ||
-            ! class_exists( 'Innocode\Prerender\Plugin' )
-        ) {
-            return;
-        }
+use Innocode\Prerender;
 
-        $GLOBALS['wp_prerender_aws_lambda'] = new Innocode\Prerender\Plugin(
-            AWS_LAMBDA_WP_PRERENDER_KEY,
-            AWS_LAMBDA_WP_PRERENDER_SECRET,
-            AWS_LAMBDA_WP_PRERENDER_REGION,
-            defined( 'AWS_LAMBDA_WP_PRERENDER_FUNCTION' )
-                ? AWS_LAMBDA_WP_PRERENDER_FUNCTION
-                : 'wordpress-prerender'
-        );
-        $GLOBALS['wp_prerender_aws_lambda']->run();
-    }
+if (
+    ! defined( 'AWS_LAMBDA_PRERENDER_KEY' ) ||
+    ! defined( 'AWS_LAMBDA_PRERENDER_SECRET' ) ||
+    ! defined( 'AWS_LAMBDA_PRERENDER_REGION' )
+) {
+    return;
 }
 
-add_action( 'init', 'innocode_wp_prerender_aws_lambda_init' );
+$GLOBALS['innocode_prerender'] = new Prerender\Plugin(
+    AWS_LAMBDA_PRERENDER_KEY,
+    AWS_LAMBDA_PRERENDER_SECRET,
+    AWS_LAMBDA_PRERENDER_REGION
+);
 
-if ( ! function_exists( 'innocode_wp_prerender_aws_lambda' ) ) {
-    function innocode_wp_prerender_aws_lambda() : Innocode\Prerender\Plugin {
-        global $wp_prerender_aws_lambda;
+if ( ! defined( 'AWS_LAMBDA_PRERENDER_FUNCTION' ) ) {
+    define( 'AWS_LAMBDA_PRERENDER_FUNCTION', 'prerender-production-render' );
+}
 
-        if ( is_null( $wp_prerender_aws_lambda ) ) {
+$GLOBALS['innocode_prerender']
+    ->get_prerender()
+    ->get_lambda()
+    ->set_function( AWS_LAMBDA_PRERENDER_FUNCTION );
+
+if ( ! defined( 'AWS_LAMBDA_PRERENDER_DB_TABLE' ) ) {
+    define( 'AWS_LAMBDA_PRERENDER_DB_TABLE', 'innocode_prerender' );
+}
+
+$GLOBALS['innocode_prerender']
+    ->get_db()
+    ->set_table( AWS_LAMBDA_PRERENDER_DB_TABLE );
+
+if ( ! defined( 'AWS_LAMBDA_PRERENDER_QUERY_ARG' ) ) {
+    define( 'AWS_LAMBDA_PRERENDER_QUERY_ARG', 'innocode_prerender' );
+}
+
+$GLOBALS['innocode_prerender']
+    ->get_query()
+    ->set_name( AWS_LAMBDA_PRERENDER_QUERY_ARG );
+
+$GLOBALS['innocode_prerender']->run();
+
+if ( ! function_exists( 'innocode_prerender' ) ) {
+    function innocode_prerender() : ?Prerender\Plugin {
+        global $innocode_prerender;
+
+        if ( is_null( $innocode_prerender ) ) {
             trigger_error(
-                'Missing required constants or prerender disabled',
+                'Missing required constants',
                 E_USER_ERROR
             );
         }
 
-        return $wp_prerender_aws_lambda;
+        return $innocode_prerender;
     }
 }
