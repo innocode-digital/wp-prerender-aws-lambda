@@ -108,6 +108,9 @@ final class Plugin
         Helpers::hook( 'delete_post', [ $prerender, 'delete_post' ] );
         Helpers::hook( 'saved_term', [ $prerender, 'update_term' ] );
         Helpers::hook( 'delete_term', [ $prerender, 'delete_term' ] );
+
+        register_activation_hook( INNOCODE_PRERENDER_FILE, [ $this, 'activate' ] );
+        register_deactivation_hook( INNOCODE_PRERENDER_FILE, [ $this, 'deactivate' ] );
     }
 
     /**
@@ -115,8 +118,11 @@ final class Plugin
      */
     public function add_flush_cache_actions() : void
     {
-        $bump_html_version = [ $this->get_db()->get_html_version(), 'bump' ];
+        $db = $this->get_db();
+
+        $bump_html_version = [ $db->get_html_version(), 'bump' ];
         $flush_secrets = [ SecretsManager::class, 'flush' ];
+        $clean_db = [ $db, 'drop_table' ];
 
         if ( function_exists( 'flush_cache_add_button' ) ) {
             flush_cache_add_button(
@@ -126,6 +132,10 @@ final class Plugin
             flush_cache_add_button(
                 __( 'Prerender secrets', 'innocode-prerender' ),
                 $flush_secrets
+            );
+            flush_cache_add_button(
+                __( 'Prerender database', 'innocode-prerender' ),
+                $clean_db
             );
         }
 
@@ -137,6 +147,10 @@ final class Plugin
             flush_cache_add_sites_action_link(
                 __( 'Prerender secrets', 'innocode-prerender' ),
                 $flush_secrets
+            );
+            flush_cache_add_sites_action_link(
+                __( 'Prerender database', 'innocode-prerender' ),
+                $clean_db
             );
         }
     }
@@ -334,5 +348,22 @@ final class Plugin
         }
 
         echo "<script>window.__INNOCODE_PRERENDER__ = true;</script>\n";
+    }
+
+    /**
+     * @return void
+     */
+    public function activate() : void
+    {
+        $this->get_db()->init();
+    }
+
+    /**
+     * @return void
+     */
+    public function deactivate() : void
+    {
+        SecretsManager::flush();
+        $this->get_db()->drop_table();
     }
 }

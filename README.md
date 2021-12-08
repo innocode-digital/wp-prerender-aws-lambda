@@ -163,7 +163,7 @@ if ( function_exists( 'innocode_prerender' ) ) {
 }
 ````
 
-But, you can just install plugin [Flush Cache Buttons](https://github.com/innocode-digital/wp-flush-cache)
+But, you can just install [Flush Cache Buttons](https://github.com/innocode-digital/wp-flush-cache)
 plugin which adds possibility to do this action by clicking on the button in admin panel.
 
 #### Modify content during prerendering

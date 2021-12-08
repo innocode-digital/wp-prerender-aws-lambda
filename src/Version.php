@@ -58,6 +58,14 @@ class Version
     }
 
     /**
+     * @return bool
+     */
+    public function delete() : bool
+    {
+        return delete_option( $this->get_option() );
+    }
+
+    /**
      * @return string|null
      */
     public function __invoke() : ?string

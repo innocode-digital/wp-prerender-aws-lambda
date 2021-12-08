@@ -1,17 +1,11 @@
+# Lock file because it's a plugin
+composer.lock
+
 # Dependency directories
 vendor/
 
 # dotenv environment variables file
 .env
-
-# macOS
-.DS_Store
-
-# IDE
-.idea/
-
-# Lock file because it's a plugin
-composer.lock
 
 # Logs
 logs
@@ -19,3 +13,10 @@ logs
 
 # Cache
 .cache
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/

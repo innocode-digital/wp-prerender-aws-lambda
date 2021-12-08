@@ -247,4 +247,17 @@ class Db
     {
         return $this->save_entry( '', $type, $object_id );
     }
+
+    /**
+     * @return void
+     */
+    public function drop_table() : void
+    {
+        global $wpdb;
+
+        $wpdb->query( "DROP TABLE IF EXISTS $wpdb->prefix{$this->get_table()}" );
+
+        $this->get_version()->delete();
+        $this->get_html_version()->delete();
+    }
 }
