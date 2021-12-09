@@ -350,19 +350,19 @@ class Prerender
 
     /**
      * @param string     $type
-     * @param string|int $object_id_or_subtype
+     * @param string|int $id
      * @param array      $args
      *
      * @return void
      */
-    public function schedule( string $type, $object_id_or_subtype = 0, array $args = [] ) : void
+    public function schedule( string $type, $id = 0, array $args = [] ) : void
     {
         if ( ! in_array( $type, Plugin::get_types(), true ) ) {
             return;
         }
 
-        $object_id = is_int( $object_id_or_subtype ) ? $object_id_or_subtype : 0;
-        $subtype = is_string( $object_id_or_subtype ) ? $object_id_or_subtype : '';
+        $object_id = is_int( $id ) ? $id : 0;
+        $subtype = is_string( $id ) ? $id : '';
 
         if ( $object_id ) {
             array_unshift( $args, $object_id );
@@ -430,7 +430,7 @@ class Prerender
      */
     public function frontpage() : void
     {
-        $this->invoke_lambda( Plugin::TYPE_FRONTPAGE, '', home_url( '/' ) );
+        $this->invoke_lambda( Plugin::TYPE_FRONTPAGE, 0, home_url( '/' ) );
     }
 
     /**

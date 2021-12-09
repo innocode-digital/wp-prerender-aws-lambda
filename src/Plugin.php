@@ -104,6 +104,7 @@ final class Plugin
         Helpers::hook( 'init', [ $this, 'init' ] );
         Helpers::hook( 'rest_api_init', [ $this->get_rest_controller(), 'register_routes' ] );
         Helpers::hook( 'wp_head', [ $this, 'print_scripts' ], 1 );
+        Helpers::hook( 'delete_expired_transients', [ SecretsManager::class, 'flush_expired' ] );
 
         $prerender = $this->get_prerender();
 
