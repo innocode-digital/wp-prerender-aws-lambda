@@ -96,6 +96,9 @@ final class Plugin
      */
     public function run() : void
     {
+        register_activation_hook( INNOCODE_PRERENDER_FILE, [ $this, 'activate' ] );
+        register_deactivation_hook( INNOCODE_PRERENDER_FILE, [ $this, 'deactivate' ] );
+
         Helpers::hook( 'plugins_loaded', [ $this, 'add_flush_cache_actions' ] );
         Helpers::hook( 'init', [ $this->get_db(), 'init' ] );
         Helpers::hook( 'init', [ $this, 'init' ] );
@@ -108,9 +111,6 @@ final class Plugin
         Helpers::hook( 'delete_post', [ $prerender, 'delete_post' ] );
         Helpers::hook( 'saved_term', [ $prerender, 'update_term' ] );
         Helpers::hook( 'delete_term', [ $prerender, 'delete_term' ] );
-
-        register_activation_hook( INNOCODE_PRERENDER_FILE, [ $this, 'activate' ] );
-        register_deactivation_hook( INNOCODE_PRERENDER_FILE, [ $this, 'deactivate' ] );
     }
 
     /**
@@ -363,7 +363,7 @@ final class Plugin
      */
     public function deactivate() : void
     {
-        SecretsManager::flush();
         $this->get_db()->drop_table();
+        SecretsManager::flush();
     }
 }

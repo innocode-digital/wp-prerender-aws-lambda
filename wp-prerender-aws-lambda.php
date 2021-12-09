@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AWS Lambda Prerender
  * Description: Generates HTML for client-side rendered content via AWS Lambda.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: Innocode
  * Author URI: https://innocode.com
  * Tested up to: 5.8.2

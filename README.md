@@ -14,8 +14,11 @@ HTML back through REST API callback.
     ````
     composer require innocode-digital/wp-prerender-aws-lambda
     ````
+  
+  By default, it will be installed as [Must Use Plugin](https://codex.wordpress.org/Must_Use_Plugins).
+  It's possible to control with `extra.installer-paths` in `composer.json`.
 
-- Alternate way is to clone this repo to `wp-content/plugins/` or `wp-content/mu-plugins/`:
+- Alternate way is to clone this repo to `wp-content/mu-plugins/` or `wp-content/plugins/`:
 
     ````
     cd wp-content/plugins/
@@ -141,12 +144,12 @@ add_filter( 'innocode_prerender_selector', function () : string {
 
 #### Existing types
 
-- `post`
-- `term`
-- `author`
-- `frontpage`
-- `post_type_archive`
-- `date_archive`
+- `post` - Post, Page and Custom Post Type
+- `term` - Category, Tag and Custom Taxonomy Term
+- `author` - Author Archive
+- `frontpage` - Front Page
+- `post_type_archive` - Post Type Archive
+- `date_archive` - Year, Month and Day Archives
 
 #### Version
 
@@ -163,7 +166,7 @@ if ( function_exists( 'innocode_prerender' ) ) {
 }
 ````
 
-But, you can just install [Flush Cache Buttons](https://github.com/innocode-digital/wp-flush-cache)
+But, you can install [Flush Cache Buttons](https://github.com/innocode-digital/wp-flush-cache)
 plugin which adds possibility to do this action by clicking on the button in admin panel.
 
 #### Modify content during prerendering
