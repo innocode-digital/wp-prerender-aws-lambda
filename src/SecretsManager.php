@@ -118,4 +118,29 @@ class SecretsManager
             )
         );
     }
+
+    /**
+     * @return bool
+     */
+    public static function flush_expired() : bool
+    {
+        if ( ! wp_using_ext_object_cache() ) {
+            return false;
+        }
+
+        global $wpdb;
+
+        return (bool) $wpdb->query(
+            $wpdb->prepare(
+                "DELETE a, b FROM $wpdb->options a, $wpdb->options b
+                WHERE a.option_name LIKE %s
+                AND a.option_name NOT LIKE %s
+                AND b.option_name = CONCAT( '_transient_timeout_', SUBSTRING( a.option_name, 12 ) )
+                AND b.option_value < %d",
+                $wpdb->esc_like( '_transient_' . static::PREFIX ) . '%',
+                $wpdb->esc_like( '_transient_timeout_' . static::PREFIX ) . '%',
+                time()
+            )
+        );
+    }
 }
