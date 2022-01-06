@@ -108,17 +108,17 @@ class Db
 
     /**
      * @param string $html
+     * @param string $version
      * @param string $type
      * @param int    $object_id
      *
      * @return int
      */
-    public function create_entry( string $html, string $type, int $object_id = 0 ) : int
+    public function create_entry( string $html, string $version, string $type, int $object_id = 0 ) : int
     {
         global $wpdb;
 
         $now = current_time( 'mysql' );
-        $html_version = $this->get_html_version();
         $created = (bool) $wpdb->insert(
             $wpdb->prefix . $this->get_table(),
             [
@@ -127,7 +127,7 @@ class Db
                 'type'      => $type,
                 'object_id' => $object_id,
                 'html'      => $html,
-                'version'   => $html_version(),
+                'version'   => $version,
             ],
             [ '%s', '%s', '%s', '%d', '%s', '%s' ]
         );
@@ -171,22 +171,22 @@ class Db
 
     /**
      * @param string $html
+     * @param string $version
      * @param string $type
      * @param int    $object_id
      *
      * @return bool
      */
-    public function update_entry( string $html, string $type, int $object_id = 0 ) : bool
+    public function update_entry( string $html, string $version, string $type, int $object_id = 0 ) : bool
     {
         global $wpdb;
 
-        $html_version = $this->get_html_version();
         $updated = (bool) $wpdb->update(
             $wpdb->prefix . $this->get_table(),
             [
                 'updated' => current_time( 'mysql' ),
                 'html'    => $html,
-                'version' => $html_version(),
+                'version' => $version,
             ],
             [ 'type' => $type, 'object_id' => $object_id ],
             [' %s', '%s', '%s' ],
@@ -225,16 +225,17 @@ class Db
 
     /**
      * @param string $html
+     * @param string $version
      * @param string $type
      * @param int    $object_id
      *
      * @return bool|int
      */
-    public function save_entry( string $html, string $type, int $object_id = 0 )
+    public function save_entry( string $html, string $version, string $type, int $object_id = 0 )
     {
         return null !== $this->get_entry( $type, $object_id )
-            ? $this->update_entry( $html, $type, $object_id )
-            : $this->create_entry( $html, $type, $object_id );
+            ? $this->update_entry( $html, $version, $type, $object_id )
+            : $this->create_entry( $html, $version, $type, $object_id );
     }
 
     /**
@@ -245,7 +246,7 @@ class Db
      */
     public function clear_entry( string $type, int $object_id = 0 )
     {
-        return $this->save_entry( '', $type, $object_id );
+        return $this->save_entry( '', '', $type, $object_id );
     }
 
     /**

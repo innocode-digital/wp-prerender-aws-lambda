@@ -234,10 +234,11 @@ final class Plugin
 
         if (
             null === $entry ||
-            ! isset( $entry['version'] ) ||
-            $html_version() !== $entry['version'] ||
-            ! isset( $entry['updated'] ) ||
-            current_time( 'U' ) > strtotime( $entry['updated'] ) + SecretsManager::EXPIRATION
+            ! in_array( $entry['version'], [ $html_version(), '' ], true ) ||
+            (
+                $entry['version'] === '' &&
+                current_time( 'U' ) > strtotime( $entry['updated'] ) + SecretsManager::EXPIRATION
+            )
         ) {
             $prerender->schedule( $type, $object_id );
 
