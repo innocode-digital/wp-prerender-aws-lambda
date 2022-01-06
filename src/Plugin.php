@@ -104,6 +104,7 @@ final class Plugin
         Helpers::hook( 'init', [ $this, 'init' ] );
         Helpers::hook( 'rest_api_init', [ $this->get_rest_controller(), 'register_routes' ] );
         Helpers::hook( 'wp_head', [ $this, 'print_scripts' ], 1 );
+
         Helpers::hook( 'delete_expired_transients', [ SecretsManager::class, 'flush_expired' ] );
 
         $prerender = $this->get_prerender();
@@ -228,10 +229,16 @@ final class Plugin
 
         $prerender = $this->get_prerender();
         $db = $prerender->get_db();
-        $entry = $db->get_entry( $type, $object_id );
         $html_version = $db->get_html_version();
+        $entry = $db->get_entry( $type, $object_id );
 
-        if ( ! isset( $entry['version'] ) || $html_version() !== $entry['version'] ) {
+        if (
+            null === $entry ||
+            ! isset( $entry['version'] ) ||
+            $html_version() !== $entry['version'] ||
+            ! isset( $entry['updated'] ) ||
+            current_time( 'U' ) > strtotime( $entry['updated'] ) + SecretsManager::EXPIRATION
+        ) {
             $prerender->schedule( $type, $object_id );
 
             return '';
