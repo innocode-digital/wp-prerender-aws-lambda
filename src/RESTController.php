@@ -54,6 +54,11 @@ class RESTController extends WP_REST_Controller
                         'type'        => 'string',
                         'required'    => true,
                     ],
+                    'version'         => [
+                        'description' => __( 'HTML version of the prerender.', 'innocode-prerender' ),
+                        'type'        => 'string',
+                        'required'    => true,
+                    ],
                     'secret'          => [
                         'description' => __( 'Secret for the callback.', 'innocode-prerender' ),
                         'type'        => 'string',
@@ -115,8 +120,9 @@ class RESTController extends WP_REST_Controller
         list( $type, $object_id ) = $converted_type_id;
 
         $html = $request->get_param( 'html' );
+        $version = $request->get_param( 'version' );
 
-        $result = $this->get_db()->save_entry( $html, $type, $object_id );
+        $result = $this->get_db()->save_entry( $html, $version, $type, $object_id );
 
         $success_status = is_int( $result ) ? WP_Http::CREATED : WP_Http::OK;
 

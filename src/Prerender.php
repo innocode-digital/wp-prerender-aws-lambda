@@ -511,16 +511,20 @@ class Prerender
     {
         list( $is_secret_set, $secret ) = SecretsManager::init( $type, (string) $id );
 
-        if ( $is_secret_set ) {
-            $lambda = $this->get_lambda();
-            $lambda( [
-                'type'       => $type,
-                'id'         => $id,
-                'url'        => add_query_arg( $this->get_query_arg(), 'true', $url ),
-                'selector'   => $this->get_selector(),
-                'return_url' => $this->get_return_url(),
-                'secret'     => $secret,
-            ] );
+        if ( ! $is_secret_set ) {
+            return;
         }
+
+        $html_version = $this->get_db()->get_html_version();
+        $lambda = $this->get_lambda();
+        $lambda( [
+            'type'       => $type,
+            'id'         => $id,
+            'url'        => add_query_arg( $this->get_query_arg(), 'true', $url ),
+            'selector'   => $this->get_selector(),
+            'return_url' => $this->get_return_url(),
+            'secret'     => $secret,
+            'version'    => $html_version(),
+        ] );
     }
 }
