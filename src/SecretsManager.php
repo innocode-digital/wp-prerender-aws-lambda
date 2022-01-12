@@ -10,7 +10,7 @@ class SecretsManager
 
     const PREFIX = 'innocode_prerender_secret_';
 
-    const EXPIRATION = 20 * MINUTE_IN_SECONDS;
+    const EXPIRATION = 30 * MINUTE_IN_SECONDS;
 
     /**
      * @param string $type

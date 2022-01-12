@@ -86,11 +86,17 @@ class RESTController extends WP_REST_Controller
 
         if ( false === $secret_hash || ! wp_check_password( $secret, $secret_hash ) ) {
             // @TODO: remove after debug.
+            $converted_type_id = Plugin::convert_type_id( $type, $id );
             error_log( print_r( [
                 $type,
                 $id,
                 $secret,
                 $secret_hash,
+                $request->get_param( 'html' ),
+                $request->get_param( 'version' ),
+                ! is_wp_error( $converted_type_id )
+                    ? $this->get_db()->get_entry( $converted_type_id[0], $converted_type_id[1] )
+                    : $converted_type_id->get_error_message()
             ], true ) );
             return new WP_Error(
                 'rest_innocode_prerender_cannot_save_html',
