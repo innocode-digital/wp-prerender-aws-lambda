@@ -92,7 +92,6 @@ class RESTController extends WP_REST_Controller
                 $id,
                 $secret,
                 $secret_hash,
-                $request->get_param( 'html' ),
                 $request->get_param( 'version' ),
                 ! is_wp_error( $converted_type_id )
                     ? $this->get_db()->get_entry( $converted_type_id[0], $converted_type_id[1] )
@@ -128,7 +127,7 @@ class RESTController extends WP_REST_Controller
             return $converted_type_id;
         }
 
-        SecretsManager::delete( $type, $id );
+//        SecretsManager::delete( $type, $id );
 
         list( $type, $object_id ) = $converted_type_id;
 
