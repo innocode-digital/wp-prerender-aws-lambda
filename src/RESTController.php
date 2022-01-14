@@ -85,8 +85,6 @@ class RESTController extends WP_REST_Controller
         $secret_hash = SecretsManager::get( $type, $id );
 
         if ( false === $secret_hash || ! wp_check_password( $secret, $secret_hash ) ) {
-            // @TODO: remove after debug.
-            error_log(print_r("$type, $id, $secret, $secret_hash", true));
             return new WP_Error(
                 'rest_innocode_prerender_cannot_save_html',
                 __( 'Sorry, you are not allowed to save prerender HTML.', 'innocode-prerender' ),
@@ -117,7 +115,7 @@ class RESTController extends WP_REST_Controller
             return $converted_type_id;
         }
 
-//        SecretsManager::delete( $type, $id );
+        SecretsManager::delete( $type, $id );
 
         list( $type, $object_id ) = $converted_type_id;
 
