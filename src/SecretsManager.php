@@ -31,7 +31,7 @@ class SecretsManager
      */
     public static function generate() : array
     {
-        $secret = wp_generate_password( 32, true, true );
+        $secret = wp_generate_password( 32 );
         $hash = wp_hash_password( $secret );
 
         return [ $secret, $hash ];

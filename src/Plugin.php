@@ -230,22 +230,24 @@ final class Plugin
         $prerender = $this->get_prerender();
         $db = $prerender->get_db();
         $html_version = $db->get_html_version();
-        $entry = $db->get_entry( $type, $object_id );
 
         if (
-            null === $entry ||
-            ! in_array( $entry['version'], [ $html_version(), '' ], true ) ||
+            null !== ( $entry = $db->get_entry( $type, $object_id ) ) &&
             (
-                $entry['version'] === '' &&
-                current_time( 'U' ) > strtotime( $entry['updated'] ) + SecretsManager::EXPIRATION
+                $html_version() == $entry->get_version() ||
+                (
+                    ! $entry->has_version() &&
+                    null !== $entry->get_updated() &&
+                    time() <= $entry->get_updated()->getTimestamp() + SecretsManager::EXPIRATION
+                )
             )
         ) {
-            $prerender->schedule( $type, $object_id );
-
-            return '';
+            return $entry->get_html();
         }
 
-        return $entry['html'] ?? '';
+        $prerender->schedule( $type, $object_id );
+
+        return '';
     }
 
     /**

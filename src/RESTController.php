@@ -107,8 +107,6 @@ class RESTController extends WP_REST_Controller
         $type = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
 
-        SecretsManager::delete( $type, $id );
-
         $converted_type_id = Plugin::convert_type_id( $type, $id );
 
         if ( is_wp_error( $converted_type_id ) ) {

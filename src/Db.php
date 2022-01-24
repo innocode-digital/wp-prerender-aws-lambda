@@ -143,16 +143,16 @@ class Db
      * @param string $type
      * @param int    $object_id
      *
-     * @return array|null
+     * @return Entry|null
      */
-    public function get_entry( string $type, int $object_id = 0 ) : ?array
+    public function get_entry( string $type, int $object_id = 0 ) : ?Entry
     {
         global $wpdb;
 
         $cache_key = "$type:$object_id";
 
-        if ( false !== ( $entry = wp_cache_get( $cache_key, 'innocode_prerender' ) ) ) {
-            return $entry;
+        if ( false !== ( $data = wp_cache_get( $cache_key, 'innocode_prerender' ) ) ) {
+            return new Entry( $data );
         }
 
         $query = $wpdb->prepare(
@@ -160,13 +160,15 @@ class Db
             $type,
             $object_id
         );
-        $entry = $wpdb->get_row( $query, ARRAY_A );
+        $data = $wpdb->get_row( $query, ARRAY_A );
 
-        if ( null !== $entry ) {
-            wp_cache_set( $cache_key, $entry, 'innocode_prerender' );
+        if ( null === $data ) {
+            return null;
         }
 
-        return $entry;
+        wp_cache_set( $cache_key, $data, 'innocode_prerender' );
+
+        return new Entry( $data );
     }
 
     /**
