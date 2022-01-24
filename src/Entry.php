@@ -38,7 +38,6 @@ class Entry
 
     /**
      * @param array $data
-     * @throws Exception
      */
     public function __construct( array $data )
     {
@@ -47,11 +46,15 @@ class Entry
         }
 
         if ( isset( $data['created'] ) ) {
-            $this->created = new DateTime( $data['created'], wp_timezone() );
+            try {
+                $this->created = new DateTime( $data['created'], wp_timezone() );
+            } catch ( Exception $exception ) {}
         }
 
         if ( isset( $data['updated'] ) ) {
-            $this->updated = new DateTime( $data['updated'], wp_timezone() );
+            try {
+                $this->updated = new DateTime( $data['updated'], wp_timezone() );
+            } catch ( Exception $exception ) {}
         }
 
         if ( isset( $data['type'] ) && in_array( $data['type'], Plugin::get_types(), true ) ) {
@@ -80,17 +83,17 @@ class Entry
     }
 
     /**
-     * @return DateTime
+     * @return DateTime|null
      */
-    public function get_created() : DateTime
+    public function get_created() : ?DateTime
     {
         return $this->created;
     }
 
     /**
-     * @return DateTime
+     * @return DateTime|null
      */
-    public function get_updated() : DateTime
+    public function get_updated() : ?DateTime
     {
         return $this->updated;
     }

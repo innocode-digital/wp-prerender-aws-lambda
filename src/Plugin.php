@@ -235,7 +235,11 @@ final class Plugin
             null !== ( $entry = $db->get_entry( $type, $object_id ) ) &&
             (
                 $html_version() == $entry->get_version() ||
-                ! $entry->has_version() && time() <= $entry->get_updated()->getTimestamp() + SecretsManager::EXPIRATION
+                (
+                    ! $entry->has_version() &&
+                    null !== $entry->get_updated() &&
+                    time() <= $entry->get_updated()->getTimestamp() + SecretsManager::EXPIRATION
+                )
             )
         ) {
             return $entry->get_html();
