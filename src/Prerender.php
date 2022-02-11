@@ -16,6 +16,10 @@ class Prerender
     /**
      * @var string
      */
+    protected $variable = 'innocodePrerender';
+    /**
+     * @var string
+     */
     protected $selector = '#app';
     /**
      * @var string
@@ -44,6 +48,14 @@ class Prerender
     public function get_lambda() : Lambda
     {
         return $this->lambda;
+    }
+
+    /**
+     * @return string
+     */
+    public function get_variable() : string
+    {
+        return apply_filters( 'innocode_prerender_variable', $this->variable );
     }
 
     /**
@@ -521,6 +533,7 @@ class Prerender
             'type'       => $type,
             'id'         => $id,
             'url'        => add_query_arg( $this->get_query_arg(), 'true', $url ),
+            'variable'   => $this->get_variable(),
             'selector'   => $this->get_selector(),
             'return_url' => $this->get_return_url(),
             'secret'     => $secret,
