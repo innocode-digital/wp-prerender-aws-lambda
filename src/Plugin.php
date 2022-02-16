@@ -275,7 +275,7 @@ final class Plugin
     {
         switch ( $type ) {
             case Plugin::TYPE_FRONTPAGE:
-                $object_id = 0;
+                $object_id = $id;
 
                 break;
             case Plugin::TYPE_POST_TYPE_ARCHIVE:
@@ -287,7 +287,7 @@ final class Plugin
                 }
 
                 $type .= "_$id";
-                $object_id = 0;
+                $object_id = $id;
 
                 break;
             case Plugin::TYPE_DATE_ARCHIVE:
@@ -311,7 +311,7 @@ final class Plugin
                     }
                 }
 
-                $object_id = 0;
+                $object_id = $id;
 
                 break;
             case Plugin::TYPE_POST:
