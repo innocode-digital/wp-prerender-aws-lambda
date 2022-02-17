@@ -180,7 +180,7 @@ class Prerender
     public function update_post_related( int $post_id ) : void
     {
         if ( $this->should_update_post_related( $post_id, Plugin::TYPE_FRONTPAGE ) ) {
-            $this->schedule_frontpage();
+            $this->schedule_frontpage( $post_id );
         }
 
         $user_id = get_post_field( 'post_author', $post_id );
@@ -241,7 +241,7 @@ class Prerender
     public function update_term_related( int $term_taxonomy_id ) : void
     {
         if ( $this->should_update_term_related( $term_taxonomy_id, Plugin::TYPE_FRONTPAGE ) ) {
-            $this->schedule_frontpage();
+            $this->schedule_frontpage( $term_taxonomy_id );
         }
 
         // @TODO: What should we do if post shows term data e.g. name somewhere in content?
@@ -329,11 +329,13 @@ class Prerender
     /**
      * Prerenders Frontpage.
      *
+     * @param int $object_id
+     *
      * @return void
      */
-    public function schedule_frontpage() : void
+    public function schedule_frontpage( int $object_id ) : void
     {
-        $this->schedule( Plugin::TYPE_FRONTPAGE );
+        $this->schedule( Plugin::TYPE_FRONTPAGE, apply_filters( 'innocode_prerender_pre_frontpage_id', 0, $object_id ) );
     }
 
     /**
@@ -438,11 +440,17 @@ class Prerender
     /**
      * Renders Frontpage.
      *
+     * @param int $id
+     *
      * @return void
      */
-    public function frontpage() : void
+    public function frontpage( int $id ) : void
     {
-        $this->invoke_lambda( Plugin::TYPE_FRONTPAGE, 0, home_url( '/' ) );
+        $this->invoke_lambda(
+            Plugin::TYPE_FRONTPAGE,
+            $id,
+            apply_filters( 'innocode_prerender_frontpage_url', home_url( '/' ), $id )
+        );
     }
 
     /**
