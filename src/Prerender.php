@@ -125,6 +125,8 @@ class Prerender
 
         $this->schedule_post( $post->ID );
         $this->update_post_related( $post->ID );
+
+        do_action( 'innocode_prerender_update_post', $post->ID );
     }
 
     /**
@@ -146,6 +148,8 @@ class Prerender
 
         $this->schedule_term( $tt_id );
         $this->update_term_related( $tt_id );
+
+        do_action( 'innocode_prerender_update_term', $tt_id );
     }
 
     /**
@@ -158,6 +162,8 @@ class Prerender
         if ( $this->get_db()->delete_entry( 'post', $post_id ) ) {
             $this->update_post_related( $post_id );
         }
+
+        do_action( 'innocode_prerender_delete_post', $post_id );
     }
 
     /**
@@ -170,6 +176,8 @@ class Prerender
         if ( $this->get_db()->delete_entry( 'term', $term_taxonomy_id ) ) {
             $this->update_term_related( $term_taxonomy_id );
         }
+
+        do_action( 'innocode_prerender_delete_term', $term_taxonomy_id );
     }
 
     /**
