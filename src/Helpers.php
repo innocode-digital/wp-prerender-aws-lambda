@@ -8,13 +8,13 @@ use ReflectionMethod;
 class Helpers
 {
     /**
-     * @param string $name
-     * @param array  $callback
-     * @param int    $priority
+     * @param string   $name
+     * @param callable $callback
+     * @param int      $priority
      *
      * @return void
      */
-    public static function hook( string $name, array $callback, int $priority = 10 ) : void
+    public static function hook( string $name, callable $callback, int $priority = 10 ) : void
     {
         try {
             $method = new ReflectionMethod( $callback[0], $callback[1] );

@@ -104,7 +104,7 @@ add_filter( 'innocode_prerender_types', function ( array $types ) : array {
     return $types;
 } );
 
-add_filter( 'innocode_prerender_custom_id', function ( $object_id, $type, $id ) : int {
+add_filter( 'innocode_prerender_custom_object_id', function ( $object_id, $type, $id ) : int {
     if ( $type != 'custom_type' ) {
         return $object_id;
     }

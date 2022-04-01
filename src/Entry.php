@@ -57,7 +57,7 @@ class Entry
             } catch ( Exception $exception ) {}
         }
 
-        if ( isset( $data['type'] ) && in_array( $data['type'], Plugin::get_types(), true ) ) {
+        if ( isset( $data['type'] ) ) {
             $this->type = $data['type'];
         }
 

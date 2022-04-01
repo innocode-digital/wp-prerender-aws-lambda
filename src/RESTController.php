@@ -109,7 +109,7 @@ class RESTController extends WP_REST_Controller
         $type = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
 
-        $converted_type_id = Plugin::convert_type_id( $type, $id );
+        $converted_type_id = Plugin::get_object_id( $type, $id );
 
         if ( is_wp_error( $converted_type_id ) ) {
             $converted_type_id->add_data( [ 'status' => WP_Http::BAD_REQUEST ] );
@@ -122,7 +122,7 @@ class RESTController extends WP_REST_Controller
          * 'rest_post_dispatch' hook with priority 10, so, secret should be in place after 'callback' but still
          * better to remove it after response returning as it cannot be used anymore after successful request.
          */
-        add_filter( 'rest_post_dispatch', [ $this, 'delete_secret_hash' ], PHP_INT_MAX, 3 );
+        Helpers::hook( 'rest_post_dispatch', [ $this, 'delete_secret_hash' ], PHP_INT_MAX );
 
         list( $type, $object_id ) = $converted_type_id;
 
