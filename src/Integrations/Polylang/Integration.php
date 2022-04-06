@@ -29,18 +29,12 @@ class Integration implements IntegrationInterface
     protected $current_lang;
 
     /**
-     * @param array $templates
-     */
-    public function __construct( array $templates )
-    {
-        $this->init_templates( $templates );
-    }
-
-    /**
      * @inheritDoc
      */
-    public function run() : void
+    public function run( Plugin $plugin ) : void
     {
+        $this->init_templates( $plugin->get_templates() );
+
         Helpers::hook( 'innocode_prerender_types', [ $this, 'add_types' ] );
         Helpers::hook( 'innocode_prerender_custom_object_id', [ $this, 'get_custom_object_id' ] );
         Helpers::hook( 'innocode_prerender_pre_update_post', [ $this, 'init_post_current_lang' ] );

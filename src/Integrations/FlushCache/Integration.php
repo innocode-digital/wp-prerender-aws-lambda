@@ -3,19 +3,17 @@
 namespace Innocode\Prerender\Integrations\FlushCache;
 
 use Innocode\Prerender\Interfaces\IntegrationInterface;
+use Innocode\Prerender\Plugin;
 use Innocode\Prerender\SecretsManager;
-use Innocode\Prerender\Traits\DbTrait;
 
 class Integration implements IntegrationInterface
 {
-    use DbTrait;
-
     /**
      * @inheritDoc
      */
-    public function run() : void
+    public function run( Plugin $plugin ) : void
     {
-        $db = $this->get_db();
+        $db = $plugin->get_db();
 
         $bump_html_version = [ $db->get_html_version(), 'bump' ];
         $flush_secrets = [ SecretsManager::class, 'flush' ];

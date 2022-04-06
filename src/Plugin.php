@@ -90,13 +90,8 @@ final class Plugin
         $this->templates[ Plugin::TYPE_POST_TYPE_ARCHIVE ] = new PostTypeArchive();
         $this->templates[ Plugin::TYPE_DATE_ARCHIVE ] = new DateArchive();
 
-        $flush_cache_integration = new Integrations\FlushCache\Integration();
-        $polylang_integration = new Integrations\Polylang\Integration( $this->templates );
-
-        $flush_cache_integration->set_db( $db );
-
-        $this->integrations[ Plugin::INTEGRATION_FLUSH_CACHE ] = $flush_cache_integration;
-        $this->integrations[ Plugin::INTEGRATION_POLYLANG ] = $polylang_integration;
+        $this->integrations[ Plugin::INTEGRATION_FLUSH_CACHE ] = new Integrations\FlushCache\Integration();
+        $this->integrations[ Plugin::INTEGRATION_POLYLANG ] = new Integrations\Polylang\Integration();
     }
 
     /**
@@ -179,7 +174,7 @@ final class Plugin
     public function run_integrations() : void
     {
         foreach ( $this->get_integrations() as $integration ) {
-            $integration->run();
+            $integration->run( $this );
         }
     }
 
