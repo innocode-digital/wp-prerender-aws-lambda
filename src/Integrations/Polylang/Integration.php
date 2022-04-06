@@ -115,7 +115,7 @@ class Integration implements IntegrationInterface
      *
      * @return int|WP_Error
      */
-    public function get_custom_object_id( $object_id, string $type, $id ) : int
+    public function get_custom_object_id( $object_id, string $type, $id )
     {
         $parsed_type = static::parse_type( $type );
 
@@ -170,7 +170,7 @@ class Integration implements IntegrationInterface
                 continue;
             }
 
-            if ( substr( $no_prefix, -$postfix_length ) == $lang ) {
+            if ( substr( $no_prefix, -$postfix_length ) == $postfix ) {
                 return [ substr( $no_prefix, 0, -$postfix_length ), $lang ];
             }
         }
