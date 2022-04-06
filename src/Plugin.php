@@ -9,7 +9,7 @@ use Innocode\Prerender\Templates\Author;
 use Innocode\Prerender\Templates\DateArchive;
 use Innocode\Prerender\Templates\Frontpage;
 use Innocode\Prerender\Templates\Post;
-use Innocode\Prerender\Templates\PostTemplateArchive;
+use Innocode\Prerender\Templates\PostTypeArchive;
 use Innocode\Prerender\Templates\Term;
 use WP_Error;
 
@@ -38,6 +38,7 @@ final class Plugin
         self::TYPE_DATE_ARCHIVE,
     ];
 
+    const INTEGRATION_FLUSH_CACHE = 'flush_cache';
     const INTEGRATION_POLYLANG = 'polylang';
 
     /**
@@ -86,10 +87,16 @@ final class Plugin
         $this->templates[ Plugin::TYPE_TERM ] = new Term();
         $this->templates[ Plugin::TYPE_AUTHOR ] = new Author();
         $this->templates[ Plugin::TYPE_FRONTPAGE ] = new Frontpage();
-        $this->templates[ Plugin::TYPE_POST_TYPE_ARCHIVE ] = new PostTemplateArchive();
+        $this->templates[ Plugin::TYPE_POST_TYPE_ARCHIVE ] = new PostTypeArchive();
         $this->templates[ Plugin::TYPE_DATE_ARCHIVE ] = new DateArchive();
 
-        $this->integrations[ Plugin::INTEGRATION_POLYLANG ] = new Integrations\Polylang\Integration( $this->templates );
+        $flush_cache_integration = new Integrations\FlushCache\Integration();
+        $polylang_integration = new Integrations\Polylang\Integration( $this->templates );
+
+        $flush_cache_integration->set_db( $db );
+
+        $this->integrations[ Plugin::INTEGRATION_FLUSH_CACHE ] = $flush_cache_integration;
+        $this->integrations[ Plugin::INTEGRATION_POLYLANG ] = $polylang_integration;
     }
 
     /**
@@ -142,7 +149,7 @@ final class Plugin
         register_activation_hook( INNOCODE_PRERENDER_FILE, [ $this, 'activate' ] );
         register_deactivation_hook( INNOCODE_PRERENDER_FILE, [ $this, 'deactivate' ] );
 
-        Helpers::hook( 'plugins_loaded', [ $this, 'add_flush_cache_actions' ] );
+        Helpers::hook( 'plugins_loaded', [ $this, 'run_integrations' ] );
         Helpers::hook( 'init', [ $this->get_db(), 'init' ] );
         Helpers::hook( 'init', [ $this, 'init' ] );
         Helpers::hook( 'rest_api_init', [ $this->get_rest_controller(), 'register_routes' ] );
@@ -164,51 +171,15 @@ final class Plugin
             Helpers::hook( "innocode_prerender_{$type}_id", [ $template, 'get_id' ] );
             Helpers::hook( "innocode_prerender_{$type}_url", [ $template, 'get_link' ] );
         }
-
-        foreach ( $this->get_integrations() as $integration ) {
-            $integration->run();
-        }
     }
 
     /**
      * @return void
      */
-    public function add_flush_cache_actions() : void
+    public function run_integrations() : void
     {
-        $db = $this->get_db();
-
-        $bump_html_version = [ $db->get_html_version(), 'bump' ];
-        $flush_secrets = [ SecretsManager::class, 'flush' ];
-        $clean_db = [ $db, 'drop_table' ];
-
-        if ( function_exists( 'flush_cache_add_button' ) ) {
-            flush_cache_add_button(
-                __( 'Prerender version', 'innocode-prerender' ),
-                $bump_html_version
-            );
-            flush_cache_add_button(
-                __( 'Prerender secrets', 'innocode-prerender' ),
-                $flush_secrets
-            );
-            flush_cache_add_button(
-                __( 'Prerender database', 'innocode-prerender' ),
-                $clean_db
-            );
-        }
-
-        if ( function_exists( 'flush_cache_add_sites_action_link' ) ) {
-            flush_cache_add_sites_action_link(
-                __( 'Prerender version', 'innocode-prerender' ),
-                $bump_html_version
-            );
-            flush_cache_add_sites_action_link(
-                __( 'Prerender secrets', 'innocode-prerender' ),
-                $flush_secrets
-            );
-            flush_cache_add_sites_action_link(
-                __( 'Prerender database', 'innocode-prerender' ),
-                $clean_db
-            );
+        foreach ( $this->get_integrations() as $integration ) {
+            $integration->run();
         }
     }
 

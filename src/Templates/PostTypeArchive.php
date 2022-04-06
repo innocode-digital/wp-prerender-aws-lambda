@@ -4,7 +4,7 @@ namespace Innocode\Prerender\Templates;
 
 use Innocode\Prerender\Interfaces\TemplateInterface;
 
-class PostTemplateArchive implements TemplateInterface
+class PostTypeArchive implements TemplateInterface
 {
     /**
      * @inheritDoc

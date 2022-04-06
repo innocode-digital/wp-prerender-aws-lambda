@@ -46,7 +46,11 @@ class Template implements TemplateInterface
      */
     public function is_queried() : bool
     {
-        return $this->get_template()->is_queried();
+        if ( ! function_exists( 'pll_current_language' ) ) {
+            return false;
+        }
+
+        return pll_current_language() == $this->get_lang() && $this->get_template()->is_queried();
     }
 
     /**

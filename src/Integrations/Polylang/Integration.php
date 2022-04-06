@@ -24,7 +24,7 @@ class Integration implements IntegrationInterface
      */
     protected $templates = [];
     /**
-     * @var string
+     * @var string|null
      */
     protected $current_lang;
 
@@ -54,6 +54,8 @@ class Integration implements IntegrationInterface
         Helpers::hook( 'innocode_prerender_type', [ $this, 'filter_type' ] );
 
         foreach ( $this->get_templates() as $type => $template ) {
+            Helpers::hook( "innocode_prerender_is_$type", [ $template, 'is_queried' ] );
+            Helpers::hook( "innocode_prerender_{$type}_id", [ $template, 'get_id' ] );
             Helpers::hook( "innocode_prerender_{$type}_url", [ $template, 'get_link' ] );
         }
     }
@@ -109,7 +111,7 @@ class Integration implements IntegrationInterface
      */
     public function add_types( array $types ) : array
     {
-        return array_merge( $types, array_keys( $this->get_templates() ) );
+        return array_merge( array_keys( $this->get_templates() ), $types );
     }
 
     /**
@@ -239,6 +241,10 @@ class Integration implements IntegrationInterface
      */
     public function filter_type( string $type ) : string
     {
+        if ( ! in_array( $type, static::TYPES, true ) ) {
+            return $type;
+        }
+
         if ( null === ( $current_lang = $this->get_current_lang() ) ) {
             return $type;
         }
