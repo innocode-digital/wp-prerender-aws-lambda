@@ -9,7 +9,7 @@ interface TemplateInterface
      */
     public function is_queried() : bool;
 
-    /***
+    /**
      * @return mixed
      */
     public function get_id();

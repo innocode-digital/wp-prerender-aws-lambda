@@ -125,6 +125,20 @@ if ( function_exists( 'innocode_prerender' ) ) {
 }
 ````
 
+Then handle it to pass correct URL to Lambda and render HTML:
+
+````
+add_filter( 'innocode_prerender_is_custom_type', function ( bool $is_queried ) : bool {
+    return is_home() && isset( $_GET['custom_type'] );
+} );
+add_filter( 'innocode_prerender_custom_type_id', function ( $id ) {
+    return isset( $_GET['custom_type'] ) ? $_GET['custom_type'] : $id;
+} );
+add_filter( 'innocode_prerender_custom_type_url', function ( string $url, $id ) : string {
+    return add_query_arg( 'custom_type', $id, home_url( '/' ) );
+} );
+````
+
 By default, plugin uses selector `#app` to grab content, i.e. that your client-side
 application is wrapped in block with ID `app`:
 
