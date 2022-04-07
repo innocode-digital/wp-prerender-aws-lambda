@@ -411,12 +411,13 @@ class Prerender
     /**
      * Invokes AWS Lambda function.
      *
-     * @param string $type
-     * @param $id
+     * @param string     $type
+     * @param string|int $id
+     * @param ...$args
      *
      * @return void
      */
-    public function invoke_lambda( string $type, $id ) : void
+    public function invoke_lambda( string $type, $id = 0, ...$args ) : void
     {
         $type = Plugin::filter_type( $type );
 
@@ -438,7 +439,7 @@ class Prerender
 
         $html_version = $this->get_db()->get_html_version();
         $lambda = $this->get_lambda();
-        $lambda( [
+        $lambda( wp_parse_args( $args, [
             'type'       => $type,
             'id'         => $id,
             'url'        => add_query_arg( $this->get_query_arg(), 'true', esc_url( $url ) ),
@@ -447,6 +448,6 @@ class Prerender
             'return_url' => $this->get_return_url(),
             'secret'     => $secret,
             'version'    => $html_version(),
-        ] );
+        ] ) );
     }
 }

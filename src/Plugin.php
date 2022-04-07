@@ -159,13 +159,13 @@ final class Plugin
         Helpers::hook( 'saved_term', [ $prerender, 'update_term' ] );
         Helpers::hook( 'delete_term', [ $prerender, 'delete_term' ] );
 
-        Helpers::hook( 'innocode_prerender', [ $prerender, 'invoke_lambda' ] );
-
         foreach ( $this->get_templates() as $type => $template ) {
             Helpers::hook( "innocode_prerender_is_$type", [ $template, 'is_queried' ] );
             Helpers::hook( "innocode_prerender_{$type}_id", [ $template, 'get_id' ] );
             Helpers::hook( "innocode_prerender_{$type}_url", [ $template, 'get_link' ] );
         }
+
+        Helpers::hook( 'innocode_prerender', [ $prerender, 'invoke_lambda' ] );
     }
 
     /**
