@@ -419,7 +419,11 @@ class Prerender
      */
     public function invoke_lambda( string $type, $id = 0, ...$args ) : void
     {
+        error_log( print_r( [ $type ], true ) );
+
         $type = Plugin::filter_type( $type );
+
+        error_log( print_r( [ $type, $id, $args ], true ) );
 
         if ( is_wp_error( $type ) ) {
             return;
@@ -427,11 +431,15 @@ class Prerender
 
         $url = apply_filters( "innocode_prerender_{$type}_url", '', $id );
 
+        error_log( print_r( [ $url ], true ) );
+
         if ( ! $url ) {
             return;
         }
 
         list( $is_secret_set, $secret ) = SecretsManager::init( $type, (string) $id );
+
+        error_log( print_r( [ $is_secret_set, $secret ], true ) );
 
         if ( ! $is_secret_set ) {
             return;
@@ -439,6 +447,18 @@ class Prerender
 
         $html_version = $this->get_db()->get_html_version();
         $lambda = $this->get_lambda();
+
+        error_log( print_r( wp_parse_args( $args, [
+            'type'       => $type,
+            'id'         => $id,
+            'url'        => add_query_arg( $this->get_query_arg(), 'true', esc_url( $url ) ),
+            'variable'   => $this->get_variable(),
+            'selector'   => $this->get_selector(),
+            'return_url' => $this->get_return_url(),
+            'secret'     => $secret,
+            'version'    => $html_version(),
+        ] ), true ) );
+
         $lambda( wp_parse_args( $args, [
             'type'       => $type,
             'id'         => $id,
