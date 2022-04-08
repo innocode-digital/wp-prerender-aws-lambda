@@ -386,8 +386,6 @@ class Prerender
             return;
         }
 
-        array_unshift( $args, $type );
-
         $object_id = is_int( $id ) ? $id : 0;
         $subtype = is_string( $id ) ? $id : '';
 
@@ -398,6 +396,8 @@ class Prerender
         if ( $subtype ) {
             array_unshift( $args, $subtype );
         }
+
+        array_unshift( $args, $type );
 
         if ( wp_next_scheduled( 'innocode_prerender', $args ) ) {
             return;
