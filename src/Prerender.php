@@ -380,11 +380,7 @@ class Prerender
      */
     public function schedule( string $type, $id = 0, array $args = [] ) : void
     {
-        error_log( print_r( [ $type ], true ) );
-
         $type = Plugin::filter_type( $type );
-
-        error_log( print_r( [ $type, $id, $args ], true ) );
 
         if ( is_wp_error( $type ) ) {
             return;
@@ -409,9 +405,7 @@ class Prerender
 
         $this->get_db()->clear_entry( $type . ( $subtype ? "_$subtype" : '' ), $object_id );
 
-        error_log( print_r( $args, true ) );
-
-        error_log( print_r( wp_schedule_single_event( time(), 'innocode_prerender', $args ) ) );
+        wp_schedule_single_event( time(), 'innocode_prerender', $args );
     }
 
     /**
@@ -425,11 +419,7 @@ class Prerender
      */
     public function invoke_lambda( string $type, $id = 0, ...$args ) : void
     {
-        error_log( print_r( [ $type ], true ) );
-
         $type = Plugin::filter_type( $type );
-
-        error_log( print_r( [ $type, $id, $args ], true ) );
 
         if ( is_wp_error( $type ) ) {
             return;
