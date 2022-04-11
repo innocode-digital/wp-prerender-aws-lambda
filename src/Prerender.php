@@ -380,7 +380,11 @@ class Prerender
      */
     public function schedule( string $type, $id = 0, array $args = [] ) : void
     {
+        error_log( print_r( [ $type ], true ) );
+
         $type = Plugin::filter_type( $type );
+
+        error_log( print_r( [ $type, $id, $args ], true ) );
 
         if ( is_wp_error( $type ) ) {
             return;
@@ -405,7 +409,9 @@ class Prerender
 
         $this->get_db()->clear_entry( $type . ( $subtype ? "_$subtype" : '' ), $object_id );
 
-        wp_schedule_single_event( time(), 'innocode_prerender', $args );
+        error_log( print_r( $args, true ) );
+
+        error_log( print_r( wp_schedule_single_event( time(), 'innocode_prerender', $args ) ) );
     }
 
     /**
@@ -431,7 +437,7 @@ class Prerender
 
         $url = apply_filters( "innocode_prerender_{$type}_url", '', $id );
 
-        error_log( print_r( [ $url ], true ) );
+        error_log( print_r( [ $type, $id, $url ], true ) );
 
         if ( ! $url ) {
             return;
