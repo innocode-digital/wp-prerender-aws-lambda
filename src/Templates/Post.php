@@ -27,8 +27,6 @@ class Post implements TemplateInterface
      */
     public function get_link( $id = 0 ) : ?string
     {
-        error_log( print_r( [ $id, is_int( $id ), get_permalink( $id ) ], true ) );
-
         return is_int( $id ) && $id && false !== ( $link = get_permalink( $id ) )
             ? $link
             : null;

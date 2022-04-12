@@ -16,12 +16,34 @@ class RESTController extends WP_REST_Controller
     use DbTrait;
 
     /**
+     * @var array
+     */
+    protected $types;
+
+    /**
      * RESTController constructor.
      */
     public function __construct()
     {
         $this->namespace = 'innocode/v1';
         $this->rest_base = 'prerender';
+    }
+
+    /**
+     * @param array $types
+     * @return void
+     */
+    public function set_types( array $types ) : void
+    {
+        $this->types = $types;
+    }
+
+    /**
+     * @return array
+     */
+    public function get_types() : array
+    {
+        return $this->types;
     }
 
     /**
@@ -42,7 +64,7 @@ class RESTController extends WP_REST_Controller
                     'type'            => [
                         'description' => __( 'Type of the prerender.', 'innocode-prerender' ),
                         'type'        => 'string',
-                        'enum'        => Plugin::get_types(),
+                        'enum'        => $this->get_types(),
                         'required'    => true,
                     ],
                     'id'              => [

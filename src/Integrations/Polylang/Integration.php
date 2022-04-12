@@ -4,7 +4,6 @@ namespace Innocode\Prerender\Integrations\Polylang;
 
 use Innocode\Prerender\Helpers;
 use Innocode\Prerender\Interfaces\IntegrationInterface;
-use Innocode\Prerender\Interfaces\TemplateInterface;
 use Innocode\Prerender\Plugin;
 use WP_Error;
 
@@ -20,10 +19,6 @@ class Integration implements IntegrationInterface
     ];
 
     /**
-     * @var TemplateInterface[]
-     */
-    protected $templates = [];
-    /**
      * @var string|null
      */
     protected $current_lang;
@@ -33,9 +28,8 @@ class Integration implements IntegrationInterface
      */
     public function run( Plugin $plugin ) : void
     {
-        $this->init_templates( $plugin->get_templates() );
+        $this->init_templates( $plugin );
 
-        Helpers::hook( 'innocode_prerender_types', [ $this, 'add_types' ] );
         Helpers::hook( 'innocode_prerender_custom_object_id', [ $this, 'get_custom_object_id' ] );
         Helpers::hook( 'innocode_prerender_pre_update_post', [ $this, 'init_post_current_lang' ] );
         Helpers::hook( 'innocode_prerender_pre_delete_post', [ $this, 'init_post_current_lang' ] );
@@ -46,39 +40,29 @@ class Integration implements IntegrationInterface
         Helpers::hook( 'innocode_prerender_update_term', [ $this, 'unset_current_lang' ] );
         Helpers::hook( 'innocode_prerender_delete_term', [ $this, 'unset_current_lang' ] );
         Helpers::hook( 'innocode_prerender_type', [ $this, 'filter_type' ] );
-
-        foreach ( $this->get_templates() as $type => $template ) {
-            Helpers::hook( "innocode_prerender_is_$type", [ $template, 'is_queried' ] );
-            Helpers::hook( "innocode_prerender_{$type}_id", [ $template, 'get_id' ] );
-            Helpers::hook( "innocode_prerender_{$type}_url", [ $template, 'get_link' ] );
-        }
     }
 
     /**
-     * @param array $templates
+     * @param Plugin $plugin
      * @return void
      */
-    public function init_templates( array $templates ) : void
+    public function init_templates( Plugin $plugin ) : void
     {
         if ( ! function_exists( 'pll_languages_list' ) ) {
             return;
         }
 
         $languages = pll_languages_list();
+        $templates = $plugin->get_templates();
 
         foreach ( static::TYPES as $type ) {
-            foreach ( $languages as $lang ) {
-                $this->templates[ static::add_lang_to_type( $type, $lang ) ] = new Template( $templates[ $type ], $lang );
+            if ( isset( $templates[ $type ] ) ) {
+                foreach ( $languages as $lang ) {
+                    $template = new Template( $templates[ $type ], $lang );
+                    $plugin->add_template( static::generate_type( $type, $lang ), $template );
+                }
             }
         }
-    }
-
-    /**
-     * @return TemplateInterface[]
-     */
-    public function get_templates() : array
-    {
-        return $this->templates;
     }
 
     /**
@@ -94,18 +78,9 @@ class Integration implements IntegrationInterface
      * @param string $lang
      * @return string
      */
-    public static function add_lang_to_type( string $type, string $lang ) : string
+    public static function generate_type( string $type, string $lang ) : string
     {
         return static::PREFIX . "{$type}_$lang";
-    }
-
-    /**
-     * @param array $types
-     * @return array
-     */
-    public function add_types( array $types ) : array
-    {
-        return array_merge( array_keys( $this->get_templates() ), $types );
     }
 
     /**
@@ -117,15 +92,11 @@ class Integration implements IntegrationInterface
      */
     public function get_custom_object_id( $object_id, string $type, $id )
     {
-        $parsed_type = static::parse_type( $type );
-
-        if ( is_wp_error( $parsed_type ) ) {
+        if ( null === ( $parsed_type = static::parse_type( $type ) ) ) {
             return $object_id;
         }
 
-        list( $basic_type ) = $parsed_type;
-
-        $converted_type_id = Plugin::get_object_id( $basic_type, $id );
+        $converted_type_id = Plugin::get_object_id( $parsed_type, $id );
 
         if ( is_wp_error( $converted_type_id ) ) {
             return $converted_type_id;
@@ -140,24 +111,18 @@ class Integration implements IntegrationInterface
      * @param string $type
      * @return array|WP_Error
      */
-    public static function parse_type( string $type )
+    public static function parse_type( string $type ) : ?string
     {
         $prefix_length = strlen( static::PREFIX );
 
         if ( substr( $type, 0, $prefix_length ) != static::PREFIX ) {
-            return new WP_Error(
-                'innocode_prerender_polylang_invalid_prefix',
-                __( 'Invalid prefix.', 'innocode-prerender' )
-            );
+            return null;
         }
 
         $no_prefix = substr( $type, $prefix_length );
 
         if ( ! function_exists( 'pll_languages_list' ) ) {
-            return new WP_Error(
-                'innocode_prerender_polylang_not_installed',
-                __( 'Polylang is not installed.', 'innocode-prerender' )
-            );
+            return null;
         }
 
         $languages = pll_languages_list();
@@ -171,14 +136,11 @@ class Integration implements IntegrationInterface
             }
 
             if ( substr( $no_prefix, -$postfix_length ) == $postfix ) {
-                return [ substr( $no_prefix, 0, -$postfix_length ), $lang ];
+                return substr( $no_prefix, 0, -$postfix_length );
             }
         }
 
-        return new WP_Error(
-            'innocode_prerender_polylang_invalid_language',
-            __( 'Invalid language', 'innocode-prerender' )
-        );
+        return null;
     }
 
     /**
@@ -243,6 +205,6 @@ class Integration implements IntegrationInterface
             return $type;
         }
 
-        return static::add_lang_to_type( $type, $current_lang );
+        return static::generate_type( $type, $current_lang );
     }
 }

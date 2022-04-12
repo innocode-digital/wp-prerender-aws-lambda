@@ -5,102 +5,9 @@ namespace Innocode\Prerender;
 use Innocode\Prerender\Traits\DbTrait;
 use WP_Post;
 
-class Prerender
+class Queue
 {
     use DbTrait;
-
-    /**
-     * @var Lambda
-     */
-    protected $lambda;
-    /**
-     * @var string
-     */
-    protected $variable = 'innocodePrerender';
-    /**
-     * @var string
-     */
-    protected $selector = '#app';
-    /**
-     * @var string
-     */
-    protected $return_url;
-    /**
-     * @var string
-     */
-    protected $query_arg;
-
-    /**
-     * Prerender constructor.
-     *
-     * @param string $key
-     * @param string $secret
-     * @param string $region
-     */
-    public function __construct( string $key, string $secret, string $region )
-    {
-        $this->lambda = new Lambda( $key, $secret, $region );
-    }
-
-    /**
-     * @return Lambda
-     */
-    public function get_lambda() : Lambda
-    {
-        return $this->lambda;
-    }
-
-    /**
-     * @return string
-     */
-    public function get_variable() : string
-    {
-        return apply_filters( 'innocode_prerender_variable', $this->variable );
-    }
-
-    /**
-     * @return string
-     */
-    public function get_selector() : string
-    {
-        return apply_filters( 'innocode_prerender_selector', $this->selector );
-    }
-
-    /**
-     * @param string $return_url
-     *
-     * @return void
-     */
-    public function set_return_url( string $return_url ) : void
-    {
-        $this->return_url = $return_url;
-    }
-
-    /**
-     * @return string
-     */
-    public function get_return_url() : string
-    {
-        return $this->return_url;
-    }
-
-    /**
-     * @param string $query_arg
-     *
-     * @return void
-     */
-    public function set_query_arg( string $query_arg ) : void
-    {
-        $this->query_arg = $query_arg;
-    }
-
-    /**
-     * @return string
-     */
-    public function get_query_arg() : string
-    {
-        return $this->query_arg;
-    }
 
     /**
      * Updates Post/Page HTML.
@@ -380,12 +287,6 @@ class Prerender
      */
     public function schedule( string $type, $id = 0, array $args = [] ) : void
     {
-        $type = Plugin::filter_type( $type );
-
-        if ( is_wp_error( $type ) ) {
-            return;
-        }
-
         $object_id = is_int( $id ) ? $id : 0;
         $subtype = is_string( $id ) ? $id : '';
 
@@ -397,7 +298,7 @@ class Prerender
             array_unshift( $args, $subtype );
         }
 
-        array_unshift( $args, $type );
+        array_unshift( $args, apply_filters( 'innocode_prerender_type', $type ) );
 
         if ( wp_next_scheduled( 'innocode_prerender', $args ) ) {
             return;
@@ -406,64 +307,5 @@ class Prerender
         $this->get_db()->clear_entry( $type . ( $subtype ? "_$subtype" : '' ), $object_id );
 
         wp_schedule_single_event( time(), 'innocode_prerender', $args );
-    }
-
-    /**
-     * Invokes AWS Lambda function.
-     *
-     * @param string     $type
-     * @param string|int $id
-     * @param ...$args
-     *
-     * @return void
-     */
-    public function invoke_lambda( string $type, $id = 0, ...$args ) : void
-    {
-        $type = Plugin::filter_type( $type );
-
-        if ( is_wp_error( $type ) ) {
-            return;
-        }
-
-        $url = apply_filters( "innocode_prerender_{$type}_url", '', $id );
-
-        error_log( print_r( [ $type, $id, $url ], true ) );
-
-        if ( ! $url ) {
-            return;
-        }
-
-        list( $is_secret_set, $secret ) = SecretsManager::init( $type, (string) $id );
-
-        error_log( print_r( [ $is_secret_set, $secret ], true ) );
-
-        if ( ! $is_secret_set ) {
-            return;
-        }
-
-        $html_version = $this->get_db()->get_html_version();
-        $lambda = $this->get_lambda();
-
-        error_log( print_r( wp_parse_args( $args, [
-            'type'       => $type,
-            'id'         => $id,
-            'url'        => add_query_arg( $this->get_query_arg(), 'true', esc_url( $url ) ),
-            'variable'   => $this->get_variable(),
-            'selector'   => $this->get_selector(),
-            'return_url' => $this->get_return_url(),
-            'secret'     => $secret,
-            'version'    => $html_version(),
-        ] ), true ) );
-
-        $lambda( wp_parse_args( $args, [
-            'type'       => $type,
-            'id'         => $id,
-            'url'        => add_query_arg( $this->get_query_arg(), 'true', esc_url( $url ) ),
-            'variable'   => $this->get_variable(),
-            'selector'   => $this->get_selector(),
-            'return_url' => $this->get_return_url(),
-            'secret'     => $secret,
-            'version'    => $html_version(),
-        ] ) );
     }
 }
