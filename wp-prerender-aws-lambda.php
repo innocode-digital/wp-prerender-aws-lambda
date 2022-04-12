@@ -37,7 +37,6 @@ if ( ! defined( 'AWS_LAMBDA_PRERENDER_FUNCTION' ) ) {
 }
 
 $GLOBALS['innocode_prerender']
-    ->get_prerender()
     ->get_lambda()
     ->set_function( AWS_LAMBDA_PRERENDER_FUNCTION );
 

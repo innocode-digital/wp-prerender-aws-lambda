@@ -21,11 +21,11 @@ class DateArchive implements TemplateInterface
     public function get_id()
     {
         if ( is_day() ) {
-            return get_the_date( 'Y' );
+            return get_the_date( 'Ymd' );
         } elseif ( is_month() ) {
-            return get_the_date( 'm' );
+            return get_the_date( 'Ym' );
         } elseif ( is_year() ) {
-            return get_the_date( 'd' );
+            return get_the_date( 'Y' );
         }
 
         return false;

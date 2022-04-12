@@ -76,7 +76,6 @@ final class Plugin
     public function __construct( string $key, string $secret, string $region )
     {
         $db = new Db();
-        $this->lambda = new Lambda( $key, $secret, $region );
         $queue = new Queue();
         $rest_controller = new RESTController();
 
@@ -84,6 +83,7 @@ final class Plugin
         $rest_controller->set_db( $db );
 
         $this->db = $db;
+        $this->lambda = new Lambda( $key, $secret, $region );
         $this->queue = $queue;
         $this->rest_controller = $rest_controller;
         $this->query = new Query();
@@ -139,6 +139,15 @@ final class Plugin
     public function add_template( string $type, TemplateInterface $template ) : void
     {
         $this->templates[ $type ] = $template;
+    }
+
+    /**
+     * @param string $type
+     * @return void
+     */
+    public function remove_template( string $type ) : void
+    {
+        unset( $this->templates[ $type ] );
     }
 
     /**
@@ -216,13 +225,7 @@ final class Plugin
     {
         $templates = $this->get_templates();
 
-        if ( ! isset( $templates[ $type ] ) ) {
-            return;
-        }
-
-        $template = $templates[ $type ];
-
-        if ( null === ( $url = $template->get_link( $id ) ) ) {
+        if ( ! isset( $templates[ $type ] ) || null === ( $url = $templates[ $type ]->get_link( $id ) ) ) {
             return;
         }
 
@@ -294,7 +297,7 @@ final class Plugin
             return $entry->get_html();
         }
 
-        $queue->schedule( $type, $object_id );
+        $queue->schedule( $type, $id );
 
         return '';
     }
@@ -324,7 +327,7 @@ final class Plugin
                 }
 
                 $type .= "_$id";
-                $object_id = (int) $id;
+                $object_id = 0;
 
                 break;
             case Plugin::TYPE_DATE_ARCHIVE:
@@ -348,7 +351,7 @@ final class Plugin
                     }
                 }
 
-                $object_id = (int) $id;
+                $object_id = 0;
 
                 break;
             default:
