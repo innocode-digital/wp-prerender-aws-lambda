@@ -9,28 +9,28 @@ class Template implements TemplateInterface
     /**
      * @var TemplateInterface
      */
-    protected $template;
+    protected $parent;
     /**
      * @var string
      */
     protected $lang;
 
     /**
-     * @param TemplateInterface $template
+     * @param TemplateInterface $parent
      * @param string            $lang
      */
-    public function __construct( TemplateInterface $template, string $lang )
+    public function __construct( TemplateInterface $parent, string $lang )
     {
-        $this->template = $template;
+        $this->parent = $parent;
         $this->lang = $lang;
     }
 
     /**
      * @return TemplateInterface
      */
-    public function get_template() : TemplateInterface
+    public function get_parent() : TemplateInterface
     {
-        return $this->template;
+        return $this->parent;
     }
 
     /**
@@ -50,7 +50,7 @@ class Template implements TemplateInterface
             return false;
         }
 
-        return pll_current_language() == $this->get_lang() && $this->get_template()->is_queried();
+        return pll_current_language() == $this->get_lang() && $this->get_parent()->is_queried();
     }
 
     /**
@@ -58,7 +58,7 @@ class Template implements TemplateInterface
      */
     public function get_id()
     {
-        return $this->get_template()->get_id();
+        return $this->get_parent()->get_id();
     }
 
     /**
@@ -66,7 +66,7 @@ class Template implements TemplateInterface
      */
     public function get_link( $id = 0 ) : ?string
     {
-        if ( null === ( $link = $this->get_template()->get_link( $id ) ) ) {
+        if ( null === ( $link = $this->get_parent()->get_link( $id ) ) ) {
             return null;
         }
 

@@ -24,20 +24,6 @@ final class Plugin
     const TYPE_POST_TYPE_ARCHIVE = 'post_type_archive';
     const TYPE_DATE_ARCHIVE = 'date_archive';
 
-    /**
-     * @note Order is important as it's used in render callback.
-     *
-     * @const array
-     */
-    const TYPES = [
-        self::TYPE_FRONTPAGE,
-        self::TYPE_POST_TYPE_ARCHIVE,
-        self::TYPE_TERM,
-        self::TYPE_POST,
-        self::TYPE_AUTHOR,
-        self::TYPE_DATE_ARCHIVE,
-    ];
-
     const INTEGRATION_FLUSH_CACHE = 'flush_cache';
     const INTEGRATION_POLYLANG = 'polylang';
 
@@ -136,18 +122,9 @@ final class Plugin
      * @param TemplateInterface $template
      * @return void
      */
-    public function add_template( string $type, TemplateInterface $template ) : void
+    public function set_template( string $type, TemplateInterface $template ) : void
     {
         $this->templates[ $type ] = $template;
-    }
-
-    /**
-     * @param string $type
-     * @return void
-     */
-    public function remove_template( string $type ) : void
-    {
-        unset( $this->templates[ $type ] );
     }
 
     /**
@@ -255,9 +232,21 @@ final class Plugin
      */
     public function render() : void
     {
-        foreach ( $this->get_templates() as $type => $template ) {
-            if ( $template->is_queried() ) {
-                echo $this->get_html( $type, $template->get_id() );
+        $templates = $this->get_templates();
+
+        /**
+         * @note Order is important.
+         */
+        foreach ( apply_filters( 'innocode_prerender_types', [
+            Plugin::TYPE_FRONTPAGE,
+            Plugin::TYPE_POST_TYPE_ARCHIVE,
+            Plugin::TYPE_TERM,
+            Plugin::TYPE_AUTHOR,
+            Plugin::TYPE_DATE_ARCHIVE,
+            Plugin::TYPE_POST,
+        ] ) as $type ) {
+            if ( isset( $templates[ $type ] ) && $templates[ $type ]->is_queried() ) {
+                echo $this->get_html( $type, $templates[ $type ]->get_id() );
                 break;
             }
         }

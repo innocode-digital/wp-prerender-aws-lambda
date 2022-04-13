@@ -287,6 +287,8 @@ class Queue
      */
     public function schedule( string $type, $id = 0, array $args = [] ) : void
     {
+        $type = apply_filters( 'innocode_prerender_type', $type );
+
         $object_id = is_int( $id ) ? $id : 0;
         $subtype = is_string( $id ) ? $id : '';
 
@@ -298,7 +300,7 @@ class Queue
             array_unshift( $args, $subtype );
         }
 
-        array_unshift( $args, apply_filters( 'innocode_prerender_type', $type ) );
+        array_unshift( $args, $type );
 
         if ( wp_next_scheduled( 'innocode_prerender', $args ) ) {
             return;
