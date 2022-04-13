@@ -91,7 +91,7 @@ class Db
             ID bigint(20) unsigned NOT NULL auto_increment,
             created datetime NOT NULL default '0000-00-00 00:00:00',
             updated datetime NOT NULL default '0000-00-00 00:00:00',
-            type varchar(25) NOT NULL default '',
+            type varchar(50) NOT NULL default '',
             object_id bigint(20) NOT NULL default 0,
             html longtext,
             version varchar(32) NOT NULL default '',

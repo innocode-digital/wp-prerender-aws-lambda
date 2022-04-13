@@ -289,22 +289,14 @@ class Queue
     {
         $type = apply_filters( 'innocode_prerender_type', $type );
 
-        $object_id = is_int( $id ) ? $id : 0;
-        $subtype = is_string( $id ) ? $id : '';
-
-        if ( $object_id ) {
-            array_unshift( $args, $object_id );
-        }
-
-        if ( $subtype ) {
-            array_unshift( $args, $subtype );
-        }
-
-        array_unshift( $args, $type );
+        array_unshift( $args, $type, $id );
 
         if ( wp_next_scheduled( 'innocode_prerender', $args ) ) {
             return;
         }
+
+        $subtype = is_string( $id ) ? $id : '';
+        $object_id = is_int( $id ) ? $id : 0;
 
         $this->get_db()->clear_entry( $type . ( $subtype ? "_$subtype" : '' ), $object_id );
 
