@@ -13,15 +13,15 @@ class SecretsManager
     const EXPIRATION = 20 * MINUTE_IN_SECONDS;
 
     /**
-     * @param string $type
+     * @param string $template
      * @param string $id
      * @return array
      */
-    public static function init( string $type, string $id ) : array
+    public static function init( string $template, string $id ) : array
     {
         list( $secret, $hash ) = static::generate();
 
-        $is_set = static::set( $type, $id, $hash );
+        $is_set = static::set( $template, $id, $hash );
 
         return [ $is_set, $secret ];
     }
@@ -38,55 +38,55 @@ class SecretsManager
     }
 
     /**
-     * @param string $type
+     * @param string $template
      * @param string $id
      * @param string $hash
      *
      * @return bool
      */
-    public static function set( string $type, string $id, string $hash ) : bool
+    public static function set( string $template, string $id, string $hash ) : bool
     {
-        return static::force_db_transient( static::METHOD_SET, $type, $id, $hash, static::EXPIRATION );
+        return static::force_db_transient( static::METHOD_SET, $template, $id, $hash, static::EXPIRATION );
     }
 
     /**
-     * @param string $type
+     * @param string $template
      * @param string $id
      *
      * @return string|false
      */
-    public static function get( string $type, string $id )
+    public static function get( string $template, string $id )
     {
-        return static::force_db_transient( static::METHOD_GET, $type, $id );
+        return static::force_db_transient( static::METHOD_GET, $template, $id );
     }
 
     /**
-     * @param string $type
+     * @param string $template
      * @param string $id
      *
      * @return bool
      */
-    public static function delete( string $type, string $id ) : bool
+    public static function delete( string $template, string $id ) : bool
     {
-        return static::force_db_transient( static::METHOD_DELETE, $type, $id );
+        return static::force_db_transient( static::METHOD_DELETE, $template, $id );
     }
 
     /**
      * Forces DB transient to make sure that it will be stored and to have possibility to expire.
      *
      * @param string $method
-     * @param string $type
+     * @param string $template
      * @param string $id
      * @param ...$args
      *
      * @return mixed
      */
-    protected static function force_db_transient( string $method, string $type, string $id, ...$args )
+    protected static function force_db_transient( string $method, string $template, string $id, ...$args )
     {
         $using_ext_object_cache = wp_using_ext_object_cache( false );
 
         $function = "{$method}_transient";
-        $result = $function( static::key( $type, $id ), ...$args );
+        $result = $function( static::key( $template, $id ), ...$args );
 
         wp_using_ext_object_cache( $using_ext_object_cache );
 
@@ -94,14 +94,14 @@ class SecretsManager
     }
 
     /**
-     * @param string $type
+     * @param string $template
      * @param string $id
      *
      * @return string
      */
-    public static function key( string $type, string $id ) : string
+    public static function key( string $template, string $id ) : string
     {
-        return static::PREFIX . "$type-$id";
+        return static::PREFIX . "$template-$id";
     }
 
     /**

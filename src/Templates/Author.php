@@ -2,10 +2,19 @@
 
 namespace Innocode\Prerender\Templates;
 
-use Innocode\Prerender\Interfaces\TemplateInterface;
+use Innocode\Prerender\Abstracts\AbstractTemplate;
+use Innocode\Prerender\Plugin;
 
-class Author implements TemplateInterface
+class Author extends AbstractTemplate
 {
+    /**
+     * @inheritDoc
+     */
+    public function get_name() : string
+    {
+        return Plugin::TEMPLATE_AUTHOR;
+    }
+
     /**
      * @inheritDoc
      */

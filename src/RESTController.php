@@ -18,7 +18,7 @@ class RESTController extends WP_REST_Controller
     /**
      * @var array
      */
-    protected $types;
+    protected $templates;
 
     /**
      * RESTController constructor.
@@ -30,20 +30,20 @@ class RESTController extends WP_REST_Controller
     }
 
     /**
-     * @param array $types
+     * @param array $templates
      * @return void
      */
-    public function set_types( array $types ) : void
+    public function set_templates( array $templates ) : void
     {
-        $this->types = $types;
+        $this->templates = $templates;
     }
 
     /**
      * @return array
      */
-    public function get_types() : array
+    public function get_templates() : array
     {
-        return $this->types;
+        return $this->templates;
     }
 
     /**
@@ -64,7 +64,7 @@ class RESTController extends WP_REST_Controller
                     'type'            => [
                         'description' => __( 'Type of the prerender.', 'innocode-prerender' ),
                         'type'        => 'string',
-                        'enum'        => $this->get_types(),
+                        'enum'        => $this->get_templates(),
                         'required'    => true,
                     ],
                     'id'              => [
@@ -102,11 +102,11 @@ class RESTController extends WP_REST_Controller
      */
     public function save_item_permissions_check( WP_REST_Request $request )
     {
-        $type = $request->get_param( 'type' );
+        $template = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
         $secret = $request->get_param( 'secret' );
 
-        $secret_hash = SecretsManager::get( $type, $id );
+        $secret_hash = SecretsManager::get( $template, $id );
 
         if ( false === $secret_hash || ! wp_check_password( $secret, $secret_hash ) ) {
             return new WP_Error(
@@ -128,17 +128,6 @@ class RESTController extends WP_REST_Controller
      */
     public function save_item( WP_REST_Request $request )
     {
-        $type = $request->get_param( 'type' );
-        $id = $request->get_param( 'id' );
-
-        $converted_type_id = Plugin::get_object_id( $type, $id );
-
-        if ( is_wp_error( $converted_type_id ) ) {
-            $converted_type_id->add_data( [ 'status' => WP_Http::BAD_REQUEST ] );
-
-            return $converted_type_id;
-        }
-
         /**
          * 'permission_callback' is also used after 'callback' in 'rest_send_allow_header' function through
          * 'rest_post_dispatch' hook with priority 10, so, secret should be in place after 'callback' but still
@@ -146,18 +135,24 @@ class RESTController extends WP_REST_Controller
          */
         Helpers::hook( 'rest_post_dispatch', [ $this, 'delete_secret_hash' ], PHP_INT_MAX );
 
-        list( $type, $object_id ) = $converted_type_id;
-
+        $template = $request->get_param( 'type' );
+        $id = $request->get_param( 'id' );
         $html = $request->get_param( 'html' );
         $version = $request->get_param( 'version' );
 
-        $result = $this->get_db()->save_entry( $html, $version, $type, $object_id );
+        $result = apply_filters( 'innocode_prerender_callback', false, $template, $id, $html, $version );
 
-        $success_status = is_int( $result ) ? WP_Http::CREATED : WP_Http::OK;
+        if ( ! $result ) {
+            return new WP_Error(
+                'rest_innocode_prerender_cannot_save_html',
+                __( 'There is no callback for such request.', 'innocode-prerender' ),
+                [ 'status' => WP_Http::BAD_REQUEST ]
+            );
+        }
 
         return new WP_REST_Response(
             $result,
-            $result ? $success_status : WP_Http::INTERNAL_SERVER_ERROR
+            is_int( $result ) ? WP_Http::CREATED : WP_Http::OK
         );
     }
 
@@ -186,10 +181,10 @@ class RESTController extends WP_REST_Controller
         WP_REST_Request $request
     ) : WP_HTTP_Response
     {
-        $type = $request->get_param( 'type' );
+        $template = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
 
-        SecretsManager::delete( $type, $id );
+        SecretsManager::delete( $template, $id );
 
         return $result;
     }

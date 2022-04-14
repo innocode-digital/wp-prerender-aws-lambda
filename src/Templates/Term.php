@@ -2,11 +2,20 @@
 
 namespace Innocode\Prerender\Templates;
 
-use Innocode\Prerender\Interfaces\TemplateInterface;
+use Innocode\Prerender\Abstracts\AbstractTemplate;
+use Innocode\Prerender\Plugin;
 use WP_Term;
 
-class Term implements TemplateInterface
+class Term extends AbstractTemplate
 {
+    /**
+     * @inheritDoc
+     */
+    public function get_name() : string
+    {
+        return Plugin::TEMPLATE_TERM;
+    }
+
     /**
      * @inheritDoc
      */

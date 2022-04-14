@@ -2,12 +2,12 @@
 
 namespace Innocode\Prerender\Integrations\Polylang;
 
-use Innocode\Prerender\Interfaces\TemplateInterface;
+use Innocode\Prerender\Abstracts\AbstractTemplate;
 
-class Template implements TemplateInterface
+class Template extends AbstractTemplate
 {
     /**
-     * @var TemplateInterface
+     * @var AbstractTemplate
      */
     protected $parent;
     /**
@@ -15,20 +15,16 @@ class Template implements TemplateInterface
      */
     protected $lang;
 
-    /**
-     * @param TemplateInterface $parent
-     * @param string            $lang
-     */
-    public function __construct( TemplateInterface $parent, string $lang )
+    public function __construct( AbstractTemplate $parent, string $lang )
     {
         $this->parent = $parent;
         $this->lang = $lang;
     }
 
     /**
-     * @return TemplateInterface
+     * @return AbstractTemplate
      */
-    public function get_parent() : TemplateInterface
+    public function get_parent() : AbstractTemplate
     {
         return $this->parent;
     }
@@ -39,6 +35,22 @@ class Template implements TemplateInterface
     public function get_lang() : string
     {
         return $this->lang;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function get_name() : string
+    {
+        return "pll_{$this->get_parent()->get_name()}_{$this->get_lang()}";
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function get_type_id_pair( $id = 0 ) : ?array
+    {
+        return $this->get_parent()->get_type_id_pair( $id );
     }
 
     /**

@@ -2,26 +2,24 @@
 
 namespace Innocode\Prerender\Integrations\Polylang;
 
+use Innocode\Prerender\Abstracts\AbstractTemplate;
 use Innocode\Prerender\Helpers;
 use Innocode\Prerender\Interfaces\IntegrationInterface;
 use Innocode\Prerender\Plugin;
-use WP_Error;
 
 class Integration implements IntegrationInterface
 {
-    const PREFIX = 'pll_';
-
-    const TYPES = [
-        Plugin::TYPE_FRONTPAGE,
-        Plugin::TYPE_POST_TYPE_ARCHIVE,
-        Plugin::TYPE_AUTHOR,
-        Plugin::TYPE_DATE_ARCHIVE,
+    const TEMPLATES = [
+        Plugin::TEMPLATE_FRONTPAGE,
+        Plugin::TEMPLATE_POST_TYPE_ARCHIVE,
+        Plugin::TEMPLATE_AUTHOR,
+        Plugin::TEMPLATE_DATE_ARCHIVE,
     ];
 
     /**
-     * @var array
+     * @var AbstractTemplate[]
      */
-    protected $types = [];
+    protected $templates = [];
     /**
      * @var string|null
      */
@@ -34,17 +32,23 @@ class Integration implements IntegrationInterface
     {
         $this->init_templates( $plugin );
 
-        Helpers::hook( 'innocode_prerender_types', [ $this, 'add_types' ] );
-        Helpers::hook( 'innocode_prerender_custom_object_id', [ $this, 'get_custom_object_id' ] );
         Helpers::hook( 'innocode_prerender_pre_update_post', [ $this, 'init_post_current_lang' ] );
         Helpers::hook( 'innocode_prerender_pre_delete_post', [ $this, 'init_post_current_lang' ] );
         Helpers::hook( 'innocode_prerender_pre_update_term', [ $this, 'init_term_current_lang' ] );
         Helpers::hook( 'innocode_prerender_pre_delete_term', [ $this, 'init_term_current_lang' ] );
+        Helpers::hook( 'innocode_prerender_template', [ $this, 'filter_template' ] );
         Helpers::hook( 'innocode_prerender_update_post', [ $this, 'unset_current_lang' ] );
         Helpers::hook( 'innocode_prerender_delete_post', [ $this, 'unset_current_lang' ] );
         Helpers::hook( 'innocode_prerender_update_term', [ $this, 'unset_current_lang' ] );
         Helpers::hook( 'innocode_prerender_delete_term', [ $this, 'unset_current_lang' ] );
-        Helpers::hook( 'innocode_prerender_type', [ $this, 'filter_type' ] );
+    }
+
+    /**
+     * @return AbstractTemplate[]
+     */
+    public function get_templates() : array
+    {
+        return $this->templates;
     }
 
     /**
@@ -53,14 +57,6 @@ class Integration implements IntegrationInterface
     public function get_current_lang() : ?string
     {
         return $this->current_lang;
-    }
-
-    /**
-     * @return array
-     */
-    public function get_types() : array
-    {
-        return $this->types;
     }
 
     /**
@@ -73,98 +69,16 @@ class Integration implements IntegrationInterface
             return;
         }
 
-        $languages = pll_languages_list();
         $templates = $plugin->get_templates();
+        $languages = pll_languages_list();
 
-        foreach ( static::TYPES as $parent_type ) {
-            if ( isset( $templates[ $parent_type ] ) ) {
+        foreach ( $templates as $template ) {
+            if ( in_array( $template->get_name(), static::TEMPLATES, true ) ) {
                 foreach ( $languages as $lang ) {
-                    $type = static::generate_type( $parent_type, $lang );
-                    $template = new Template( $templates[ $parent_type ], $lang );
-                    $plugin->set_template( $type, $template );
-                    $this->types[] = $type;
+                    $plugin->insert_template( new Template( $template, $lang ), 0 );
                 }
             }
         }
-    }
-
-    /**
-     * @param array $types
-     * @return array
-     */
-    public function add_types( array $types ) : array
-    {
-        return array_merge( $this->get_types(), $types );
-    }
-
-    /**
-     * @param string $parent_type
-     * @param string $lang
-     * @return string
-     */
-    public static function generate_type( string $parent_type, string $lang ) : string
-    {
-        return static::PREFIX . "{$parent_type}_$lang";
-    }
-
-    /**
-     * @param int|WP_Error $object_id
-     * @param string       $type
-     * @param string|int   $id
-     *
-     * @return int|WP_Error
-     */
-    public function get_custom_object_id( $object_id, string $type, $id )
-    {
-        if ( null === ( $parsed_type = static::parse_type( $type ) ) ) {
-            return $object_id;
-        }
-
-        $converted_type_id = Plugin::get_object_id( $parsed_type, $id );
-
-        if ( is_wp_error( $converted_type_id ) ) {
-            return $converted_type_id;
-        }
-
-        list( , $object_id ) = $converted_type_id;
-
-        return $object_id;
-    }
-
-    /**
-     * @param string $type
-     * @return array|WP_Error
-     */
-    public static function parse_type( string $type ) : ?string
-    {
-        $prefix_length = strlen( static::PREFIX );
-
-        if ( substr( $type, 0, $prefix_length ) != static::PREFIX ) {
-            return null;
-        }
-
-        $no_prefix = substr( $type, $prefix_length );
-
-        if ( ! function_exists( 'pll_languages_list' ) ) {
-            return null;
-        }
-
-        $languages = pll_languages_list();
-
-        foreach ( $languages as $lang ) {
-            $postfix = "_$lang";
-            $postfix_length = strlen( $postfix );
-
-            if ( ! $postfix_length ) {
-                continue;
-            }
-
-            if ( substr( $no_prefix, -$postfix_length ) == $postfix ) {
-                return substr( $no_prefix, 0, -$postfix_length );
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -208,27 +122,27 @@ class Integration implements IntegrationInterface
     }
 
     /**
+     * @param string $template_name
+     * @return string
+     */
+    public function filter_template( string $template_name ) : string
+    {
+        if ( ! in_array( $template_name, static::TEMPLATES, true ) ) {
+            return $template_name;
+        }
+
+        if ( null === ( $current_lang = $this->get_current_lang() ) ) {
+            return $template_name;
+        }
+
+        return "pll_{$template_name}_$current_lang";
+    }
+
+    /**
      * @return void
      */
     public function unset_current_lang() : void
     {
         $this->current_lang = null;
-    }
-
-    /**
-     * @param string $type
-     * @return string
-     */
-    public function filter_type( string $type ) : string
-    {
-        if ( ! in_array( $type, static::TYPES, true ) ) {
-            return $type;
-        }
-
-        if ( null === ( $current_lang = $this->get_current_lang() ) ) {
-            return $type;
-        }
-
-        return static::generate_type( $type, $current_lang );
     }
 }

@@ -2,10 +2,31 @@
 
 namespace Innocode\Prerender\Templates;
 
-use Innocode\Prerender\Interfaces\TemplateInterface;
+use Innocode\Prerender\Abstracts\AbstractTemplate;
+use Innocode\Prerender\Plugin;
 
-class PostTypeArchive implements TemplateInterface
+class PostTypeArchive extends AbstractTemplate
 {
+    /**
+     * @inheritDoc
+     */
+    public function get_name() : string
+    {
+        return Plugin::TEMPLATE_POST_TYPE_ARCHIVE;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function get_type_id_pair( $id = 0 ) : ?array
+    {
+        if ( ! post_type_exists( $id ) ) {
+            return null;
+        }
+
+        return [ "{$this->get_name()}_$id", 0 ];
+    }
+
     /**
      * @inheritDoc
      */

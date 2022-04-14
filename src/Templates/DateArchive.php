@@ -2,11 +2,45 @@
 
 namespace Innocode\Prerender\Templates;
 
+use Innocode\Prerender\Abstracts\AbstractTemplate;
 use Innocode\Prerender\Helpers;
-use Innocode\Prerender\Interfaces\TemplateInterface;
+use Innocode\Prerender\Plugin;
 
-class DateArchive implements TemplateInterface
+class DateArchive extends AbstractTemplate
 {
+    /**
+     * @inheritDoc
+     */
+    public function get_name() : string
+    {
+        return Plugin::TEMPLATE_DATE_ARCHIVE;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function get_type_id_pair( $id = 0 ) : ?array
+    {
+        $parsed = Helpers::parse_Ymd( $id );
+
+        if ( false === $parsed['year'] ) {
+            return null;
+        }
+
+        $type = $this->get_name();
+        $type .= "_{$parsed['year']}";
+
+        if ( false !== $parsed['month'] ) {
+            $type .= $parsed['month'];
+
+            if ( false !== $parsed['day'] ) {
+                $type .= $parsed['day'];
+            }
+        }
+
+        return [ $type, 0 ];
+    }
+
     /**
      * @inheritDoc
      */

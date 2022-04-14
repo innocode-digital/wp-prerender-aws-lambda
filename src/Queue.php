@@ -102,13 +102,13 @@ class Queue
      */
     public function update_post_related( int $post_id ) : void
     {
-        if ( $this->should_update_post_related( $post_id, Plugin::TYPE_FRONTPAGE ) ) {
+        if ( $this->should_update_post_related( $post_id, Plugin::TEMPLATE_FRONTPAGE ) ) {
             $this->schedule_frontpage();
         }
 
         $user_id = get_post_field( 'post_author', $post_id );
 
-        if ( $this->should_update_post_related( $post_id, Plugin::TYPE_AUTHOR, $user_id ) ) {
+        if ( $this->should_update_post_related( $post_id, Plugin::TEMPLATE_AUTHOR, $user_id ) ) {
             $this->schedule_author( $user_id );
         }
 
@@ -119,7 +119,7 @@ class Queue
         if (
             $post_type_archive_link &&
             untrailingslashit( $post_type_archive_link ) != untrailingslashit( home_url() ) &&
-            $this->should_update_post_related( $post_id, Plugin::TYPE_POST_TYPE_ARCHIVE, $post_type )
+            $this->should_update_post_related( $post_id, Plugin::TEMPLATE_POST_TYPE_ARCHIVE, $post_type )
         ) {
             $this->schedule_post_type_archive( $post_type );
         }
@@ -129,7 +129,7 @@ class Queue
             $month = get_the_date( 'm', $post_id );
             $day = get_the_date( 'd', $post_id );
 
-            if ( $this->should_update_post_related( $post_id, Plugin::TYPE_DATE_ARCHIVE, $year . $month . $day ) ) {
+            if ( $this->should_update_post_related( $post_id, Plugin::TEMPLATE_DATE_ARCHIVE, $year . $month . $day ) ) {
                 $this->schedule_date_archive( $year );
                 $this->schedule_date_archive( $year . $month );
                 $this->schedule_date_archive( $year . $month . $day );
@@ -150,7 +150,7 @@ class Queue
             }
 
             foreach ( $terms as $term ) {
-                if ( $this->should_update_post_related( $post_id, Plugin::TYPE_TERM, $term->term_taxonomy_id ) ) {
+                if ( $this->should_update_post_related( $post_id, Plugin::TEMPLATE_TERM, $term->term_taxonomy_id ) ) {
                     $this->schedule_term( $term->term_taxonomy_id );
                 }
             }
@@ -164,7 +164,7 @@ class Queue
      */
     public function update_term_related( int $term_taxonomy_id ) : void
     {
-        if ( $this->should_update_term_related( $term_taxonomy_id, Plugin::TYPE_FRONTPAGE ) ) {
+        if ( $this->should_update_term_related( $term_taxonomy_id, Plugin::TEMPLATE_FRONTPAGE ) ) {
             $this->schedule_frontpage();
         }
 
@@ -180,7 +180,7 @@ class Queue
      */
     public function should_update_post_related( int $post_id, string $related, $id = 0 ) : bool
     {
-        return $this->should_update_related( Plugin::TYPE_POST, $post_id, $related, $id );
+        return $this->should_update_related( Plugin::TEMPLATE_POST, $post_id, $related, $id );
     }
 
     /**
@@ -192,20 +192,20 @@ class Queue
      */
     public function should_update_term_related( int $term_taxonomy_id, string $related, $id = 0 ) : bool
     {
-        return $this->should_update_related( Plugin::TYPE_TERM, $term_taxonomy_id, $related, $id );
+        return $this->should_update_related( Plugin::TEMPLATE_TERM, $term_taxonomy_id, $related, $id );
     }
 
     /**
-     * @param string     $type
+     * @param string     $template
      * @param int        $object_id
      * @param string     $related
      * @param string|int $id
      *
      * @return bool
      */
-    public function should_update_related( string $type, int $object_id, string $related, $id = 0 ) : bool
+    public function should_update_related( string $template, int $object_id, string $related, $id = 0 ) : bool
     {
-        return (bool) apply_filters( "innocode_prerender_should_update_{$type}_$related", true, $object_id, $id );
+        return (bool) apply_filters( "innocode_prerender_should_update_{$template}_$related", true, $object_id, $id );
     }
 
     /**
@@ -217,7 +217,7 @@ class Queue
      */
     public function schedule_post( int $post_id ) : void
     {
-        $this->schedule( Plugin::TYPE_POST, $post_id );
+        $this->schedule( Plugin::TEMPLATE_POST, $post_id );
     }
 
     /**
@@ -229,7 +229,7 @@ class Queue
      */
     public function schedule_term( int $term_taxonomy_id ) : void
     {
-        $this->schedule( Plugin::TYPE_TERM, $term_taxonomy_id );
+        $this->schedule( Plugin::TEMPLATE_TERM, $term_taxonomy_id );
     }
 
     /**
@@ -241,7 +241,7 @@ class Queue
      */
     public function schedule_author( int $user_id ) : void
     {
-        $this->schedule( Plugin::TYPE_AUTHOR, $user_id );
+        $this->schedule( Plugin::TEMPLATE_AUTHOR, $user_id );
     }
 
     /**
@@ -251,7 +251,7 @@ class Queue
      */
     public function schedule_frontpage() : void
     {
-        $this->schedule( Plugin::TYPE_FRONTPAGE );
+        $this->schedule( Plugin::TEMPLATE_FRONTPAGE );
     }
 
     /**
@@ -263,7 +263,7 @@ class Queue
      */
     public function schedule_post_type_archive( string $post_type ) : void
     {
-        $this->schedule( Plugin::TYPE_POST_TYPE_ARCHIVE, $post_type );
+        $this->schedule( Plugin::TEMPLATE_POST_TYPE_ARCHIVE, $post_type );
     }
 
     /**
@@ -275,35 +275,27 @@ class Queue
      */
     public function schedule_date_archive( string $date ) : void
     {
-        $this->schedule( Plugin::TYPE_DATE_ARCHIVE, $date );
+        $this->schedule( Plugin::TEMPLATE_DATE_ARCHIVE, $date );
     }
 
     /**
-     * @param string     $type
+     * @param string     $template
      * @param string|int $id
      * @param array      $args
      *
      * @return void
      */
-    public function schedule( string $type, $id = 0, array $args = [] ) : void
+    public function schedule( string $template, $id = 0, array $args = [] ) : void
     {
-        $type = apply_filters( 'innocode_prerender_type', $type );
+        $template = apply_filters( 'innocode_prerender_template', $template );
 
-        $converted_type_id = Plugin::get_object_id( $type, $id );
-
-        if ( is_wp_error( $converted_type_id ) ) {
-            return;
-        }
-
-        array_unshift( $args, $type, $id );
+        array_unshift( $args, $template, $id );
 
         if ( wp_next_scheduled( 'innocode_prerender', $args ) ) {
             return;
         }
 
-        list( $type, $object_id ) = $converted_type_id;
-
-        $this->get_db()->clear_entry( $type, $object_id );
+        do_action( 'innocode_prerender_schedule', ...$args );
 
         wp_schedule_single_event( time(), 'innocode_prerender', $args );
     }
