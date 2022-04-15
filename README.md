@@ -86,57 +86,35 @@ version then cron task will be scheduled to make new request to Lambda.
 If theme does not support e.g. date archives then it's possible to disable them at all:
 
 ````
-add_filter( 'innocode_prerender_types', function ( array $types ) : array {
-    $keys = array_flip( $types );
+add_filter( 'innocode_prerender_template', function ( string $template ) : string {
+    if ( $template == 'author' ) {
+        return '';
+    }
 
-    unset( $types[ $keys['date_archive'] ] );
-
-    return $types;
+    return $template;
 } );
 ````
 
 Also, it's possible to add custom type in addition to [existing](#existing-types):
 
-````
-add_filter( 'innocode_prerender_types', function ( array $types ) : array {
-    $types[] = 'custom_type';
-
-    return $types;
-} );
-
-add_filter( 'innocode_prerender_custom_object_id', function ( $object_id, $type, $id ) : int {
-    if ( $type != 'custom_type' ) {
-        return $object_id;
-    }
-    
-    // Some magic to convert $id into $object_id etc.
-    
-    return $object_id;
-}, 10, 3 );
-````
-
-But, in this case you should manually schedule cron task somewhere:
+1. Create new template from `Innocode\Prerender\Abstracts\AbstractTemplate` class:
 
 ````
-if ( function_exists( 'innocode_prerender' ) ) {
-    innocode_prerender()
-        ->get_prerender()
-        ->schedule( 'custom_type', 43 ); // 'custom_type' is name of type and 43 some ID of object.
+...
+use Innocode\Prerender\Abstracts\AbstractTemplate;
+
+class YourTemplate extends AbstractTemplate
+{
+    ...
 }
 ````
 
-Then handle it to pass correct URL to Lambda and render HTML:
+2. Implement method stubs in your template class.
+3. Add your template class to templates collection:
 
 ````
-add_filter( 'innocode_prerender_is_custom_type', function ( bool $is_queried ) : bool {
-    return is_home() && isset( $_GET['custom_type'] );
-} );
-add_filter( 'innocode_prerender_custom_type_id', function ( $id ) {
-    return isset( $_GET['custom_type'] ) ? $_GET['custom_type'] : $id;
-} );
-add_filter( 'innocode_prerender_custom_type_url', function ( string $url, $id ) : string {
-    return add_query_arg( 'custom_type', $id, home_url( '/' ) );
-} );
+$your_template = new YourTemplate();
+innocode_prerender()->insert_templates( [ $your_template ] );
 ````
 
 By default, plugin uses selector `#app` to grab content, i.e. that your client-side
