@@ -310,7 +310,9 @@ final class Plugin
      */
     public function get_html( AbstractTemplate $template ) : string
     {
-        if ( null === ( $type_id_pair = $template->get_type_id_pair() ) ) {
+        $id = $template->get_id();
+
+        if ( null === ( $type_id_pair = $template->get_type_id_pair( $id ) ) ) {
             return '';
         }
 
@@ -334,7 +336,7 @@ final class Plugin
             return $entry->get_html();
         }
 
-        $queue->schedule( $template->get_name(), $template->get_id() );
+        $queue->schedule( $template->get_name(), $id );
 
         return '';
     }
