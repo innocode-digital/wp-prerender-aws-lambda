@@ -79,7 +79,7 @@ add_filter( 'innocode_prerender_should_update_post_author', function (
 }, 10, 3 );
 ````
 
-Also, plugin generates HTML "on the fly" when someone visits any of object with [type](#existing-types)
+Also, plugin generates HTML "on the fly" when someone visits any of object with [template](#existing-templates)
 e.g. single post and if there is no content in database for current object in current
 version then cron task will be scheduled to make new request to Lambda.
 
@@ -87,7 +87,7 @@ If theme does not support e.g. date archives then it's possible to disable them 
 
 ````
 add_filter( 'innocode_prerender_template', function ( string $template ) : string {
-    if ( $template == 'author' ) {
+    if ( $template == 'date_archive' ) {
         return '';
     }
 
@@ -95,7 +95,7 @@ add_filter( 'innocode_prerender_template', function ( string $template ) : strin
 } );
 ````
 
-Also, it's possible to add custom type in addition to [existing](#existing-types):
+Also, it's possible to add custom template in addition to [existing](#existing-templates):
 
 1. Create new template from `Innocode\Prerender\Abstracts\AbstractTemplate` class:
 
@@ -110,7 +110,7 @@ class YourTemplate extends AbstractTemplate
 ````
 
 2. Implement method stubs in your template class.
-3. Add your template class to templates collection:
+3. Add your template class object to templates collection:
 
 ````
 $your_template = new YourTemplate();
@@ -134,7 +134,7 @@ add_filter( 'innocode_prerender_selector', function () : string {
 
 ### Notes
 
-#### Existing types
+#### Existing templates
 
 - `post` - Post, Page and Custom Post Type
 - `term` - Category, Tag and Custom Taxonomy Term
