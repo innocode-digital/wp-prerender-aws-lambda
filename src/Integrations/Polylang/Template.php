@@ -50,7 +50,13 @@ class Template extends AbstractTemplate
      */
     public function get_type_id_pair( $id = 0 ) : ?array
     {
-        return $this->get_parent()->get_type_id_pair( $id );
+        if ( null === ( $type_id_pair = $this->get_parent()->get_type_id_pair( $id ) ) ) {
+            return null;
+        }
+
+        list( $type, $object_id ) = $type_id_pair;
+
+        return [ str_replace( $this->get_parent()->get_name(), $this->get_name(), $type ), $object_id ];
     }
 
     /**

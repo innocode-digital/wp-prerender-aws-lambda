@@ -69,16 +69,18 @@ class Integration implements IntegrationInterface
             return;
         }
 
-        $templates = $plugin->get_templates();
         $languages = pll_languages_list();
+        $templates = [];
 
-        foreach ( $templates as $template ) {
+        foreach ( $plugin->get_templates() as $template ) {
             if ( in_array( $template->get_name(), static::TEMPLATES, true ) ) {
                 foreach ( $languages as $lang ) {
-                    $plugin->insert_template( new Template( $template, $lang ), 0 );
+                    $templates[] = new Template( $template, $lang );
                 }
             }
         }
+
+        $plugin->insert_templates( $templates, 0 );
     }
 
     /**

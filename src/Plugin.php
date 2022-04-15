@@ -143,13 +143,13 @@ final class Plugin
     }
 
     /**
-     * @param AbstractTemplate $template
-     * @param int              $position
+     * @param AbstractTemplate[] $templates
+     * @param int                $position
      * @return void
      */
-    public function insert_template( AbstractTemplate $template, int $position = -1 ) : void
+    public function insert_templates( array $templates, int $position = -1 ) : void
     {
-        array_splice( $this->templates, $position, 0, $template );
+        array_splice( $this->templates, $position, 0, $templates );
     }
 
     /**
