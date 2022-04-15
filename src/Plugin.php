@@ -256,17 +256,6 @@ final class Plugin
         $lambda = $this->get_lambda();
         $html_version = $this->get_db()->get_html_version();
 
-        error_log( print_r( wp_parse_args( $args, [
-            'type'       => $template_name,
-            'id'         => $id,
-            'url'        => add_query_arg( $this->get_query()->get_name(), 'true', $url ),
-            'variable'   => apply_filters( 'innocode_prerender_variable', 'innocodePrerender' ),
-            'selector'   => apply_filters( 'innocode_prerender_selector', '#app' ),
-            'return_url' => $this->get_rest_controller()->url(),
-            'secret'     => $secret,
-            'version'    => $html_version(),
-        ] ), true ) );
-
         $lambda( wp_parse_args( $args, [
             'type'       => $template_name,
             'id'         => $id,
@@ -280,13 +269,14 @@ final class Plugin
     }
 
     /**
+     * @param mixed  $result
      * @param string $template_name
      * @param string $id
      * @param string $html
      * @param string $version
      * @return bool|int
      */
-    public function save_entry( string $template_name, string $id, string $html, string $version )
+    public function save_entry( $result, string $template_name, string $id, string $html, string $version )
     {
         if (
             null === ( $template = $this->find_template( $template_name ) ) ||

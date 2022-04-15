@@ -289,6 +289,10 @@ class Queue
     {
         $template = apply_filters( 'innocode_prerender_template', $template );
 
+        if ( ! $template ) {
+            return;
+        }
+
         array_unshift( $args, $template, $id );
 
         if ( wp_next_scheduled( 'innocode_prerender', $args ) ) {
