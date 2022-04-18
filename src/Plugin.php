@@ -269,25 +269,31 @@ final class Plugin
     }
 
     /**
-     * @param mixed  $result
-     * @param string $template_name
-     * @param string $id
-     * @param string $html
-     * @param string $version
-     * @return bool|int
+     * @param Entry|null $entry
+     * @param string     $template_name
+     * @param string     $id
+     * @param string     $html
+     * @param string     $version
+     * @return Entry|null
      */
-    public function save_entry( $result, string $template_name, string $id, string $html, string $version )
+    public function save_entry( ?Entry $entry, string $template_name, string $id, string $html, string $version ) : ?Entry
     {
         if (
             null === ( $template = $this->find_template( $template_name ) ) ||
             null === ( $type_id_pair = $template->get_type_id_pair( $id ) )
         ) {
-            return false;
+            return null;
         }
 
         list( $type, $object_id ) = $type_id_pair;
 
-        return $this->get_db()->save_entry( $html, $version, $type, $object_id );
+        $db = $this->get_db();
+
+        if ( ! $db->save_entry( $html, $version, $type, $object_id ) ) {
+            return null;
+        }
+
+        return $db->get_entry( $type, $object_id );
     }
 
     /**

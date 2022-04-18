@@ -41,8 +41,8 @@ class Entry
      */
     public function __construct( array $data )
     {
-        if ( isset( $data['id'] ) ) {
-            $this->id = (int) $data['id'];
+        if ( isset( $data['ID'] ) ) {
+            $this->id = (int) $data['ID'];
         }
 
         if ( isset( $data['created'] ) ) {

@@ -5,7 +5,6 @@ namespace Innocode\Prerender;
 use Innocode\Prerender\Traits\DbTrait;
 use WP_Error;
 use WP_Http;
-use WP_HTTP_Response;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -140,20 +139,17 @@ class RESTController extends WP_REST_Controller
         $html = $request->get_param( 'html' );
         $version = $request->get_param( 'version' );
 
-        $result = apply_filters( 'innocode_prerender_callback', false, $template, $id, $html, $version );
+        $entry = apply_filters( 'innocode_prerender_callback', null, $template, $id, $html, $version );
 
-        if ( ! $result ) {
+        if ( ! ( $entry instanceof Entry ) ) {
             return new WP_Error(
-                'rest_innocode_prerender_cannot_save_html',
+                'rest_innocode_prerender_invalid_callback',
                 __( 'There is no callback for such request.', 'innocode-prerender' ),
                 [ 'status' => WP_Http::BAD_REQUEST ]
             );
         }
 
-        return new WP_REST_Response(
-            $result,
-            is_int( $result ) ? WP_Http::CREATED : WP_Http::OK
-        );
+        return $this->prepare_item_for_response( $entry, $request );
     }
 
     /**
@@ -197,5 +193,21 @@ class RESTController extends WP_REST_Controller
         $html_version = $this->get_db()->get_html_version();
 
         return $html_version() == $param;
+    }
+
+    /**
+     * @param Entry           $item
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     */
+    public function prepare_item_for_response( $item, $request ) : WP_REST_Response
+    {
+        return rest_ensure_response( [
+            'id'      => $item->get_id(),
+            'created' => $item->get_created()->format( 'Y-m-d\TH:i:s' ),
+            'updated' => $item->get_updated()->format( 'Y-m-d\TH:i:s' ),
+            'html'    => $item->get_html(),
+            'version' => $item->get_version(),
+        ] );
     }
 }
