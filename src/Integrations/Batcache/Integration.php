@@ -42,7 +42,6 @@ class Integration implements IntegrationInterface
     {
         error_log( print_r( [
             function_exists( 'batcache_clear_url' ),
-            $entry,
             $template_name,
             $id,
             $this->get_plugin()->find_template( $template_name ),
