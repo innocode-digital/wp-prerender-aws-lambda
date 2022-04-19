@@ -165,8 +165,8 @@ class RESTController extends WP_REST_Controller
     /**
      * Removes secret before response returning.
      *
-     * @param array $result
-     * @param WP_REST_Server $server
+     * @param array           $result
+     * @param WP_REST_Server  $server
      * @param WP_REST_Request $request
      *
      * @return array
