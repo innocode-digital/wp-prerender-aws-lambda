@@ -32,7 +32,7 @@ class PostTypeArchive extends AbstractTemplate
      */
     public function is_queried() : bool
     {
-        return is_post_type_archive();
+        return is_post_type_archive() || is_home() && ! is_front_page();
     }
 
     /**

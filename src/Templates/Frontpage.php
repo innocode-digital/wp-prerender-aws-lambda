@@ -20,7 +20,7 @@ class Frontpage extends AbstractTemplate
      */
     public function is_queried() : bool
     {
-        return is_front_page() || is_home();
+        return is_front_page();
     }
 
     /**

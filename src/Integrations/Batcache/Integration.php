@@ -41,9 +41,6 @@ class Integration implements IntegrationInterface
     public function flush( ?Entry $entry, string $template_name, string $id ) : ?Entry
     {
         error_log( print_r( [
-            function_exists( 'batcache_clear_url' ),
-            $template_name,
-            $id,
             $this->get_plugin()->find_template( $template_name ),
             $this->get_plugin()->find_template( $template_name )->get_link( $id )
         ], true ) );
