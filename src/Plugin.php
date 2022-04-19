@@ -24,6 +24,7 @@ final class Plugin
     const TEMPLATE_TERM = 'term';
 
     const INTEGRATION_FLUSH_CACHE = 'flush_cache';
+    const INTEGRATION_BATCACHE = 'batcache';
     const INTEGRATION_POLYLANG = 'polylang';
 
     /**
@@ -84,6 +85,7 @@ final class Plugin
         $this->templates[] = new Post();
 
         $this->integrations[ Plugin::INTEGRATION_FLUSH_CACHE ] = new Integrations\FlushCache\Integration();
+        $this->integrations[ Plugin::INTEGRATION_BATCACHE ] = new Integrations\Batcache\Integration();
         $this->integrations[ Plugin::INTEGRATION_POLYLANG ] = new Integrations\Polylang\Integration();
     }
 
