@@ -3,6 +3,7 @@
 namespace Innocode\Prerender\Integrations\Polylang;
 
 use Innocode\Prerender\Abstracts\AbstractTemplate;
+use Innocode\Prerender\Plugin;
 
 class Template extends AbstractTemplate
 {
@@ -84,17 +85,20 @@ class Template extends AbstractTemplate
      */
     public function get_link( $id = 0 ) : ?string
     {
-        if ( null === ( $link = $this->get_parent()->get_link( $id ) ) ) {
+        $parent = $this->get_parent();
+
+        if ( null === ( $link = $parent->get_link( $id ) ) ) {
             return null;
         }
 
+        $template = $parent->get_name();
         $lang = $this->get_lang();
 
-        if ( is_front_page() ) {
+        if ( $template == Plugin::TEMPLATE_FRONTPAGE ) {
             return function_exists( 'pll_home_url' ) ? pll_home_url( $lang ) : $link;
         }
 
-        if ( is_home() ) {
+        if ( $template == Plugin::TEMPLATE_POST_TYPE_ARCHIVE && $id == 'post' ) {
             $page_for_posts = (int) get_option( 'page_for_posts' );
 
             if ( $page_for_posts ) {
