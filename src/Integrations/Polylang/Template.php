@@ -110,7 +110,7 @@ class Template extends AbstractTemplate
                     return null;
                 }
 
-                return false !== ( $link = get_permalink( (int) $id ) ) ? $link : null;
+                return false !== ( $link = get_permalink( $posts_page_lang ) ) ? $link : null;
             }
         }
 
