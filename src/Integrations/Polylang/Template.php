@@ -95,25 +95,33 @@ class Template extends AbstractTemplate
         $lang = $this->get_lang();
 
         if ( $template == Plugin::TEMPLATE_FRONTPAGE ) {
-            return function_exists( 'pll_home_url' ) ? pll_home_url( $lang ) : $link;
+            return function_exists( 'pll_home_url' ) ? pll_home_url( $lang ) : null;
         }
 
         if ( $template == Plugin::TEMPLATE_POST_TYPE_ARCHIVE && $id == 'post' ) {
-            $page_for_posts = (int) get_option( 'page_for_posts' );
+            $posts_page = (int) get_option( 'page_for_posts' );
 
-            if ( $page_for_posts ) {
-                return function_exists( 'pll_get_post' ) ? pll_get_post( $page_for_posts, $lang ) : $link;
+            if ( $posts_page ) {
+                $posts_page_lang = function_exists( 'pll_get_post' )
+                    ? pll_get_post( $posts_page, $lang )
+                    : null;
+
+                if ( ! $posts_page_lang ) {
+                    return null;
+                }
+
+                return false !== ( $link = get_permalink( (int) $id ) ) ? $link : null;
             }
         }
 
         if ( ! function_exists( 'PLL' ) ) {
-            return $link;
+            return null;
         }
 
         $pll = PLL();
 
         if ( false === ( $language = $pll->model->get_language( $lang ) ) ) {
-            return $link;
+            return null;
         }
 
         return $pll->links_model->switch_language_in_link( $link, $language );
