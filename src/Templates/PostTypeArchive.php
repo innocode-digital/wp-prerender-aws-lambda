@@ -48,8 +48,6 @@ class PostTypeArchive extends AbstractTemplate
      */
     public function get_link( $id = 0 ) : ?string
     {
-        return is_string( $id ) && $id && false !== ( $link = get_post_type_archive_link( $id ) )
-            ? $link
-            : null;
+        return $id && false !== ( $link = get_post_type_archive_link( $id ) ) ? $link : null;
     }
 }
