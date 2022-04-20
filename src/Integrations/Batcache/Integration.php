@@ -41,8 +41,11 @@ class Integration implements IntegrationInterface
     public function flush( ?Entry $entry, string $template_name, string $id ) : ?Entry
     {
         error_log( print_r( [
-            $this->get_plugin()->find_template( $template_name ),
-            $this->get_plugin()->find_template( $template_name )->get_link( $id )
+            $entry,
+            $template_name,
+            $id,
+            function_exists( 'batcache_clear_url' ),
+            $this->get_plugin()->find_template( $template_name )
         ], true ) );
 
         if (
@@ -54,7 +57,10 @@ class Integration implements IntegrationInterface
             return $entry;
         }
 
-        batcache_clear_url( $url );
+        error_log( print_r( [
+            $url,
+            batcache_clear_url( $url ),
+        ], true ) );
 
         return $entry;
     }

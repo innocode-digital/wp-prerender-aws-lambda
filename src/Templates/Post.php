@@ -36,8 +36,6 @@ class Post extends AbstractTemplate
      */
     public function get_link( $id = 0 ) : ?string
     {
-        return is_int( $id ) && $id && false !== ( $link = get_permalink( $id ) )
-            ? $link
-            : null;
+        return $id && false !== ( $link = get_permalink( (int) $id ) ) ? $link : null;
     }
 }

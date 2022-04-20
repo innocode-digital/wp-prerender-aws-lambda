@@ -38,6 +38,6 @@ class Author extends AbstractTemplate
      */
     public function get_link( $id = 0 ) : ?string
     {
-        return is_int( $id ) && $id ? get_author_posts_url( $id ) : null;
+        return $id ? get_author_posts_url( (int) $id ) : null;
     }
 }

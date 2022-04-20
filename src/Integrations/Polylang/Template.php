@@ -88,12 +88,25 @@ class Template extends AbstractTemplate
             return null;
         }
 
+        $lang = $this->get_lang();
+
+        if ( is_front_page() ) {
+            return function_exists( 'pll_home_url' ) ? pll_home_url( $lang ) : $link;
+        }
+
+        if ( is_home() ) {
+            $page_for_posts = (int) get_option( 'page_for_posts' );
+
+            if ( $page_for_posts ) {
+                return function_exists( 'pll_get_post' ) ? pll_get_post( $page_for_posts, $lang ) : $link;
+            }
+        }
+
         if ( ! function_exists( 'PLL' ) ) {
             return $link;
         }
 
         $pll = PLL();
-        $lang = $this->get_lang();
 
         if ( false === ( $language = $pll->model->get_language( $lang ) ) ) {
             return $link;

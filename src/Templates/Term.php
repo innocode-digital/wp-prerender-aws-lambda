@@ -39,11 +39,11 @@ class Term extends AbstractTemplate
      */
     public function get_link( $id = 0 ) : ?string
     {
-        if ( ! is_int( $id ) || ! $id ) {
+        if ( ! $id ) {
             return null;
         }
 
-        $term = get_term_by( 'term_taxonomy_id', $id );
+        $term = get_term_by( 'term_taxonomy_id', (int) $id );
 
         if ( ! $term ) {
             return null;
