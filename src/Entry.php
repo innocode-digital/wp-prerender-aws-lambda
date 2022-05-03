@@ -41,8 +41,8 @@ class Entry
      */
     public function __construct( array $data )
     {
-        if ( isset( $data['id'] ) ) {
-            $this->id = (int) $data['id'];
+        if ( isset( $data['ID'] ) ) {
+            $this->id = (int) $data['ID'];
         }
 
         if ( isset( $data['created'] ) ) {
@@ -57,7 +57,7 @@ class Entry
             } catch ( Exception $exception ) {}
         }
 
-        if ( isset( $data['type'] ) && in_array( $data['type'], Plugin::get_types(), true ) ) {
+        if ( isset( $data['type'] ) ) {
             $this->type = $data['type'];
         }
 

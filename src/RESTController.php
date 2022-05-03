@@ -5,7 +5,6 @@ namespace Innocode\Prerender;
 use Innocode\Prerender\Traits\DbTrait;
 use WP_Error;
 use WP_Http;
-use WP_HTTP_Response;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -16,12 +15,34 @@ class RESTController extends WP_REST_Controller
     use DbTrait;
 
     /**
+     * @var array
+     */
+    protected $templates;
+
+    /**
      * RESTController constructor.
      */
     public function __construct()
     {
         $this->namespace = 'innocode/v1';
         $this->rest_base = 'prerender';
+    }
+
+    /**
+     * @param array $templates
+     * @return void
+     */
+    public function set_templates( array $templates ) : void
+    {
+        $this->templates = $templates;
+    }
+
+    /**
+     * @return array
+     */
+    public function get_templates() : array
+    {
+        return $this->templates;
     }
 
     /**
@@ -42,7 +63,7 @@ class RESTController extends WP_REST_Controller
                     'type'            => [
                         'description' => __( 'Type of the prerender.', 'innocode-prerender' ),
                         'type'        => 'string',
-                        'enum'        => Plugin::get_types(),
+                        'enum'        => $this->get_templates(),
                         'required'    => true,
                     ],
                     'id'              => [
@@ -80,19 +101,26 @@ class RESTController extends WP_REST_Controller
      */
     public function save_item_permissions_check( WP_REST_Request $request )
     {
-        $type = $request->get_param( 'type' );
+        $template = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
         $secret = $request->get_param( 'secret' );
 
-        $secret_hash = SecretsManager::get( $type, $id );
+        $secret_hash = SecretsManager::get( (string) $template, (string) $id );
 
-        if ( false === $secret_hash || ! wp_check_password( $secret, $secret_hash ) ) {
+        if ( false === $secret_hash || ! wp_check_password( (string) $secret, $secret_hash ) ) {
             return new WP_Error(
                 'rest_innocode_prerender_cannot_save_html',
                 __( 'Sorry, you are not allowed to save prerender HTML.', 'innocode-prerender' ),
                 [ 'status' => WP_Http::UNAUTHORIZED ]
             );
         }
+
+        /**
+         * 'permission_callback' is also used after 'callback' in 'rest_send_allow_header' function through
+         * 'rest_post_dispatch' hook with priority 10, so, secret should be in place after 'callback' but still
+         * better to remove it after response returning as it cannot be used anymore after successful request.
+         */
+        Helpers::hook( 'rest_pre_echo_response', [ $this, 'delete_secret_hash' ], PHP_INT_MAX );
 
         return true;
     }
@@ -106,37 +134,22 @@ class RESTController extends WP_REST_Controller
      */
     public function save_item( WP_REST_Request $request )
     {
-        $type = $request->get_param( 'type' );
+        $template = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
-
-        $converted_type_id = Plugin::convert_type_id( $type, $id );
-
-        if ( is_wp_error( $converted_type_id ) ) {
-            $converted_type_id->add_data( [ 'status' => WP_Http::BAD_REQUEST ] );
-
-            return $converted_type_id;
-        }
-
-        /**
-         * 'permission_callback' is also used after 'callback' in 'rest_send_allow_header' function through
-         * 'rest_post_dispatch' hook with priority 10, so, secret should be in place after 'callback' but still
-         * better to remove it after response returning as it cannot be used anymore after successful request.
-         */
-        add_filter( 'rest_post_dispatch', [ $this, 'delete_secret_hash' ], PHP_INT_MAX, 3 );
-
-        list( $type, $object_id ) = $converted_type_id;
-
         $html = $request->get_param( 'html' );
         $version = $request->get_param( 'version' );
 
-        $result = $this->get_db()->save_entry( $html, $version, $type, $object_id );
+        $entry = apply_filters( 'innocode_prerender_callback', null, $template, $id, $html, $version );
 
-        $success_status = is_int( $result ) ? WP_Http::CREATED : WP_Http::OK;
+        if ( ! ( $entry instanceof Entry ) ) {
+            return new WP_Error(
+                'rest_innocode_prerender_invalid_callback',
+                __( 'There is no callback for such request.', 'innocode-prerender' ),
+                [ 'status' => WP_Http::BAD_REQUEST ]
+            );
+        }
 
-        return new WP_REST_Response(
-            $result,
-            $result ? $success_status : WP_Http::INTERNAL_SERVER_ERROR
-        );
+        return $this->prepare_item_for_response( $entry, $request );
     }
 
     /**
@@ -152,22 +165,18 @@ class RESTController extends WP_REST_Controller
     /**
      * Removes secret before response returning.
      *
-     * @param WP_HTTP_Response $result
-     * @param WP_REST_Server $server
+     * @param array           $result
+     * @param WP_REST_Server  $server
      * @param WP_REST_Request $request
      *
-     * @return WP_HTTP_Response
+     * @return array
      */
-    public function delete_secret_hash(
-        WP_HTTP_Response $result,
-        WP_REST_Server $server,
-        WP_REST_Request $request
-    ) : WP_HTTP_Response
+    public function delete_secret_hash( array $result, WP_REST_Server $server, WP_REST_Request $request ) : array
     {
-        $type = $request->get_param( 'type' );
+        $template = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
 
-        SecretsManager::delete( $type, $id );
+        SecretsManager::delete( $template, $id );
 
         return $result;
     }
@@ -184,5 +193,21 @@ class RESTController extends WP_REST_Controller
         $html_version = $this->get_db()->get_html_version();
 
         return $html_version() == $param;
+    }
+
+    /**
+     * @param Entry           $item
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     */
+    public function prepare_item_for_response( $item, $request ) : WP_REST_Response
+    {
+        return rest_ensure_response( [
+            'id'      => $item->get_id(),
+            'created' => $item->get_created()->format( 'Y-m-d\TH:i:s' ),
+            'updated' => $item->get_updated()->format( 'Y-m-d\TH:i:s' ),
+            'html'    => $item->get_html(),
+            'version' => $item->get_version(),
+        ] );
     }
 }

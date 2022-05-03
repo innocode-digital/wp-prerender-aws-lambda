@@ -2,38 +2,39 @@
 
 namespace Innocode\Prerender;
 
+use Innocode\Prerender\Abstracts\AbstractTemplate;
+use Innocode\Prerender\Interfaces\IntegrationInterface;
 use Innocode\Prerender\Traits\DbTrait;
-use WP_Error;
+use Innocode\Prerender\Templates\Author;
+use Innocode\Prerender\Templates\DateArchive;
+use Innocode\Prerender\Templates\Frontpage;
+use Innocode\Prerender\Templates\Post;
+use Innocode\Prerender\Templates\PostTypeArchive;
+use Innocode\Prerender\Templates\Term;
 
 final class Plugin
 {
     use DbTrait;
 
-    const TYPE_POST = 'post';
-    const TYPE_TERM = 'term';
-    const TYPE_AUTHOR = 'author';
-    const TYPE_FRONTPAGE = 'frontpage';
-    const TYPE_POST_TYPE_ARCHIVE = 'post_type_archive';
-    const TYPE_DATE_ARCHIVE = 'date_archive';
+    const TEMPLATE_AUTHOR = 'author';
+    const TEMPLATE_DATE_ARCHIVE = 'date_archive';
+    const TEMPLATE_FRONTPAGE = 'frontpage';
+    const TEMPLATE_POST = 'post';
+    const TEMPLATE_POST_TYPE_ARCHIVE = 'post_type_archive';
+    const TEMPLATE_TERM = 'term';
+
+    const INTEGRATION_FLUSH_CACHE = 'flush_cache';
+    const INTEGRATION_BATCACHE = 'batcache';
+    const INTEGRATION_POLYLANG = 'polylang';
 
     /**
-     * @note Order is important as it's used in render callback.
-     *
-     * @const array
+     * @var Lambda
      */
-    const TYPES = [
-        self::TYPE_FRONTPAGE,
-        self::TYPE_POST_TYPE_ARCHIVE,
-        self::TYPE_TERM,
-        self::TYPE_POST,
-        self::TYPE_AUTHOR,
-        self::TYPE_DATE_ARCHIVE,
-    ];
-
+    protected $lambda;
     /**
-     * @var Prerender
+     * @var Queue
      */
-    private $prerender;
+    protected $queue;
     /**
      * @var RESTController
      */
@@ -42,6 +43,14 @@ final class Plugin
      * @var Query
      */
     private $query;
+    /**
+     * @var AbstractTemplate[]
+     */
+    private $templates = [];
+    /**
+     * @var IntegrationInterface[]
+     */
+    private $integrations = [];
 
     /**
      * Plugin constructor.
@@ -53,24 +62,47 @@ final class Plugin
     public function __construct( string $key, string $secret, string $region )
     {
         $db = new Db();
-        $prerender = new Prerender( $key, $secret, $region );
+        $queue = new Queue();
         $rest_controller = new RESTController();
 
-        $prerender->set_db( $db );
+        $queue->set_db( $db );
         $rest_controller->set_db( $db );
 
         $this->db = $db;
-        $this->prerender = $prerender;
+        $this->lambda = new Lambda( $key, $secret, $region );
+        $this->queue = $queue;
         $this->rest_controller = $rest_controller;
         $this->query = new Query();
+
+        /**
+         * @note Order is important.
+         */
+        $this->templates[] = new Frontpage();
+        $this->templates[] = new PostTypeArchive();
+        $this->templates[] = new Term();
+        $this->templates[] = new Author();
+        $this->templates[] = new DateArchive();
+        $this->templates[] = new Post();
+
+        $this->integrations[ Plugin::INTEGRATION_FLUSH_CACHE ] = new Integrations\FlushCache\Integration();
+        $this->integrations[ Plugin::INTEGRATION_BATCACHE ] = new Integrations\Batcache\Integration();
+        $this->integrations[ Plugin::INTEGRATION_POLYLANG ] = new Integrations\Polylang\Integration();
     }
 
     /**
-     * @return Prerender
+     * @return Lambda
      */
-    public function get_prerender() : Prerender
+    public function get_lambda() : Lambda
     {
-        return $this->prerender;
+        return $this->lambda;
+    }
+
+    /**
+     * @return Queue
+     */
+    public function get_queue() : Queue
+    {
+        return $this->queue;
     }
 
     /**
@@ -90,6 +122,47 @@ final class Plugin
     }
 
     /**
+     * @return AbstractTemplate[]
+     */
+    public function get_templates() : array
+    {
+        return $this->templates;
+    }
+
+    /**
+     * @param string $name
+     * @return AbstractTemplate|null
+     */
+    public function find_template( string $name ) : ?AbstractTemplate
+    {
+        foreach ( $this->get_templates() as $template ) {
+            if ( $template->get_name() == $name ) {
+                return $template;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param AbstractTemplate[] $templates
+     * @param int                $position
+     * @return void
+     */
+    public function insert_templates( array $templates, int $position = -1 ) : void
+    {
+        array_splice( $this->templates, $position, 0, $templates );
+    }
+
+    /**
+     * @return IntegrationInterface[]
+     */
+    public function get_integrations() : array
+    {
+        return $this->integrations;
+    }
+
+    /**
      * Hooks registration.
      *
      * @return void
@@ -99,7 +172,7 @@ final class Plugin
         register_activation_hook( INNOCODE_PRERENDER_FILE, [ $this, 'activate' ] );
         register_deactivation_hook( INNOCODE_PRERENDER_FILE, [ $this, 'deactivate' ] );
 
-        Helpers::hook( 'plugins_loaded', [ $this, 'add_flush_cache_actions' ] );
+        Helpers::hook( 'plugins_loaded', [ $this, 'run_integrations' ] );
         Helpers::hook( 'init', [ $this->get_db(), 'init' ] );
         Helpers::hook( 'init', [ $this, 'init' ] );
         Helpers::hook( 'rest_api_init', [ $this->get_rest_controller(), 'register_routes' ] );
@@ -107,53 +180,25 @@ final class Plugin
 
         Helpers::hook( 'delete_expired_transients', [ SecretsManager::class, 'flush_expired' ] );
 
-        $prerender = $this->get_prerender();
+        $queue = $this->get_queue();
 
-        Helpers::hook( 'transition_post_status', [ $prerender, 'update_post' ] );
-        Helpers::hook( 'delete_post', [ $prerender, 'delete_post' ] );
-        Helpers::hook( 'saved_term', [ $prerender, 'update_term' ] );
-        Helpers::hook( 'delete_term', [ $prerender, 'delete_term' ] );
+        Helpers::hook( 'transition_post_status', [ $queue, 'update_post' ] );
+        Helpers::hook( 'delete_post', [ $queue, 'delete_post' ] );
+        Helpers::hook( 'saved_term', [ $queue, 'update_term' ] );
+        Helpers::hook( 'delete_term', [ $queue, 'delete_term' ] );
+
+        Helpers::hook( 'innocode_prerender_schedule', [ $this, 'clear_entry' ] );
+        Helpers::hook( 'innocode_prerender', [ $this, 'invoke_lambda' ] );
+        Helpers::hook( 'innocode_prerender_callback', [ $this, 'save_entry' ] );
     }
 
     /**
      * @return void
      */
-    public function add_flush_cache_actions() : void
+    public function run_integrations() : void
     {
-        $db = $this->get_db();
-
-        $bump_html_version = [ $db->get_html_version(), 'bump' ];
-        $flush_secrets = [ SecretsManager::class, 'flush' ];
-        $clean_db = [ $db, 'drop_table' ];
-
-        if ( function_exists( 'flush_cache_add_button' ) ) {
-            flush_cache_add_button(
-                __( 'Prerender version', 'innocode-prerender' ),
-                $bump_html_version
-            );
-            flush_cache_add_button(
-                __( 'Prerender secrets', 'innocode-prerender' ),
-                $flush_secrets
-            );
-            flush_cache_add_button(
-                __( 'Prerender database', 'innocode-prerender' ),
-                $clean_db
-            );
-        }
-
-        if ( function_exists( 'flush_cache_add_sites_action_link' ) ) {
-            flush_cache_add_sites_action_link(
-                __( 'Prerender version', 'innocode-prerender' ),
-                $bump_html_version
-            );
-            flush_cache_add_sites_action_link(
-                __( 'Prerender secrets', 'innocode-prerender' ),
-                $flush_secrets
-            );
-            flush_cache_add_sites_action_link(
-                __( 'Prerender database', 'innocode-prerender' ),
-                $clean_db
-            );
+        foreach ( $this->get_integrations() as $integration ) {
+            $integration->run( $this );
         }
     }
 
@@ -162,31 +207,95 @@ final class Plugin
      */
     public function init() : void
     {
-        $prerender = $this->get_prerender();
-        $rest_controller = $this->get_rest_controller();
-        $query = $this->get_query();
-
-        $prerender->set_return_url( $rest_controller->url() );
-        $prerender->set_query_arg( $query->get_name() );
-
-        foreach ( Plugin::get_types() as $type ) {
-            if ( in_array( $type, Plugin::TYPES, true ) ) {
-                Helpers::hook( "innocode_prerender_$type", [ $prerender, $type ] );
-
-                Helpers::hook( "innocode_prerender_is_$type", [ $query, "is_$type" ] );
-                Helpers::hook( "innocode_prerender_{$type}_id", [ $query, "{$type}_id" ] );
-            } else {
-                Helpers::hook( 'innocode_prerender_custom_type', [ $prerender, 'custom_type' ] );
-            }
-        }
+        $this->get_rest_controller()->set_templates( array_map( function ( AbstractTemplate $template ) {
+            return $template->get_name();
+        }, $this->get_templates() ) );
     }
 
     /**
-     * @return array
+     * @param string     $template_name
+     * @param string|int $id
+     * @return void
      */
-    public static function get_types() : array
+    public function clear_entry( string $template_name, $id = 0 ) : void
     {
-        return apply_filters( 'innocode_prerender_types', Plugin::TYPES );
+        if (
+            null === ( $template = $this->find_template( $template_name ) ) ||
+            null === ( $type_id_pair = $template->get_type_id_pair( $id ) )
+        ) {
+            return;
+        }
+
+        list( $type, $object_id ) = $type_id_pair;
+
+        $this->get_db()->clear_entry( $type, $object_id );
+    }
+
+    /**
+     * Invokes AWS Lambda function.
+     *
+     * @param string     $template_name
+     * @param string|int $id
+     * @param ...$args
+     *
+     * @return void
+     */
+    public function invoke_lambda( string $template_name, $id = 0, ...$args ) : void
+    {
+        if (
+            null === ( $template = $this->find_template( $template_name ) ) ||
+            null === ( $url = $template->get_link( $id ) )
+        ) {
+            return;
+        }
+
+        list( $is_secret_set, $secret ) = SecretsManager::init( $template_name, (string) $id );
+
+        if ( ! $is_secret_set ) {
+            return;
+        }
+
+        $lambda = $this->get_lambda();
+        $html_version = $this->get_db()->get_html_version();
+
+        $lambda( wp_parse_args( $args, [
+            'type'       => $template_name,
+            'id'         => $id,
+            'url'        => add_query_arg( $this->get_query()->get_name(), 'true', $url ),
+            'variable'   => apply_filters( 'innocode_prerender_variable', 'innocodePrerender' ),
+            'selector'   => apply_filters( 'innocode_prerender_selector', '#app' ),
+            'return_url' => $this->get_rest_controller()->url(),
+            'secret'     => $secret,
+            'version'    => $html_version(),
+        ] ) );
+    }
+
+    /**
+     * @param Entry|null $entry
+     * @param string     $template_name
+     * @param string     $id
+     * @param string     $html
+     * @param string     $version
+     * @return Entry|null
+     */
+    public function save_entry( ?Entry $entry, string $template_name, string $id, string $html, string $version ) : ?Entry
+    {
+        if (
+            null === ( $template = $this->find_template( $template_name ) ) ||
+            null === ( $type_id_pair = $template->get_type_id_pair( $id ) )
+        ) {
+            return null;
+        }
+
+        list( $type, $object_id ) = $type_id_pair;
+
+        $db = $this->get_db();
+
+        if ( ! $db->save_entry( $html, $version, $type, $object_id ) ) {
+            return null;
+        }
+
+        return $db->get_entry( $type, $object_id );
     }
 
     /**
@@ -194,41 +303,31 @@ final class Plugin
      */
     public function render() : void
     {
-        foreach ( Plugin::get_types() as $type ) {
-            if ( apply_filters( "innocode_prerender_is_$type", false ) ) {
-                $id = apply_filters( "innocode_prerender_{$type}_id", 0 );
-
-                echo $this->get_html( $type, $id );
-
+        foreach ( $this->get_templates() as $template ) {
+            if ( $template->is_queried() ) {
+                echo $this->get_html( $template );
                 break;
             }
         }
     }
 
     /**
-     * @param string     $type
-     * @param string|int $id
+     * @param AbstractTemplate $template
      *
-     * @return string|WP_Error
+     * @return string
      */
-    public function get_html( string $type, $id = 0 )
+    public function get_html( AbstractTemplate $template ) : string
     {
-        $type = Plugin::filter_type( $type );
+        $id = $template->get_id();
 
-        if ( is_wp_error( $type ) ) {
-            return $type;
+        if ( null === ( $type_id_pair = $template->get_type_id_pair( $id ) ) ) {
+            return '';
         }
 
-        $converted_type_id = Plugin::convert_type_id( $type, $id );
+        list( $type, $object_id ) = $type_id_pair;
 
-        if ( is_wp_error( $converted_type_id ) ) {
-            return $converted_type_id;
-        }
-
-        list( $type, $object_id ) = $converted_type_id;
-
-        $prerender = $this->get_prerender();
-        $db = $prerender->get_db();
+        $queue = $this->get_queue();
+        $db = $queue->get_db();
         $html_version = $db->get_html_version();
 
         if (
@@ -245,105 +344,9 @@ final class Plugin
             return $entry->get_html();
         }
 
-        $prerender->schedule( $type, $object_id );
+        $queue->schedule( $template->get_name(), $id );
 
         return '';
-    }
-
-    /**
-     * @param string $type
-     *
-     * @return string|WP_Error
-     */
-    public static function filter_type( string $type )
-    {
-        return in_array( $type, Plugin::get_types(), true )
-            ? $type
-            : new WP_Error(
-                'innocode_prerender_invalid_type',
-                __( 'Invalid type.', 'innocode-prerender' )
-            );
-    }
-
-    /**
-     * @param string     $type
-     * @param string|int $id
-     *
-     * @return array|WP_Error
-     */
-    public static function convert_type_id( string $type, $id = 0 )
-    {
-        switch ( $type ) {
-            case Plugin::TYPE_FRONTPAGE:
-            case Plugin::TYPE_POST:
-            case Plugin::TYPE_TERM:
-            case Plugin::TYPE_AUTHOR:
-                $object_id = (int) $id;
-
-                break;
-            case Plugin::TYPE_POST_TYPE_ARCHIVE:
-                if ( ! post_type_exists( $id ) ) {
-                    return new WP_Error(
-                        'innocode_prerender_invalid_id',
-                        __( 'Invalid ID.', 'innocode-prerender' )
-                    );
-                }
-
-                $type .= "_$id";
-                $object_id = (int) $id;
-
-                break;
-            case Plugin::TYPE_DATE_ARCHIVE:
-                $parsed = Helpers::parse_Ymd( $id );
-
-                if ( false === $parsed['year'] ) {
-                    // Something wrong as date should always include year.
-                    return new WP_Error(
-                        'innocode_prerender_invalid_date',
-                        __( 'Invalid date.', 'innocode-prerender' )
-                    );
-                }
-
-                $type .= "_{$parsed['year']}";
-
-                if ( false !== $parsed['month'] ) {
-                    $type .= $parsed['month'];
-
-                    if ( false !== $parsed['day'] ) {
-                        $type .= $parsed['day'];
-                    }
-                }
-
-                $object_id = (int) $id;
-
-                break;
-            default:
-                $object_id = Plugin::filter_custom_id( $type, $id );
-
-                if ( is_wp_error( $object_id ) ) {
-                    return $object_id;
-                }
-
-                break;
-        }
-
-        return [ $type, $object_id ];
-    }
-
-    /**
-     * @param string     $type
-     * @param string|int $id
-     *
-     * @return int|WP_Error
-     */
-    public static function filter_custom_id( string $type, $id )
-    {
-        $object_id = new WP_Error(
-            'innocode_prerender_custom_id_not_implemented',
-            __( 'Custom object ID is not implemented.', 'innocode-prerender' )
-        );
-
-        return apply_filters( 'innocode_prerender_custom_id', $object_id, $type, $id );
     }
 
     /**
