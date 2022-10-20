@@ -320,16 +320,13 @@ final class Plugin
      */
     public function render( bool $only_crawlers = false ) : void
     {
-        if (
-            $this->get_query()->is_exists() ||
-            $only_crawlers && ! $this->get_crawler_detect()->isCrawler()
-        ) {
+        if ( $this->get_query()->is_exists() ) {
             return;
         }
 
         foreach ( $this->get_templates() as $template ) {
             if ( $template->is_queried() ) {
-                echo $this->get_html( $template );
+                echo $this->get_html( $template, $only_crawlers );
                 break;
             }
         }
@@ -337,10 +334,11 @@ final class Plugin
 
     /**
      * @param AbstractTemplate $template
+     * @param bool             $only_crawlers
      *
      * @return string
      */
-    public function get_html( AbstractTemplate $template ) : string
+    public function get_html( AbstractTemplate $template, bool $only_crawlers = false ) : string
     {
         $id = $template->get_id();
 
@@ -364,7 +362,7 @@ final class Plugin
                 )
             )
         ) {
-            return $entry->get_html();
+            return ! $only_crawlers || $this->get_crawler_detect()->isCrawler() ? $entry->get_html() : '';
         }
 
         $this->get_queue()->schedule( $template->get_name(), $id );
