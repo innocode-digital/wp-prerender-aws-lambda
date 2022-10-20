@@ -321,7 +321,10 @@ final class Plugin
      */
     public function render( bool $only_crawlers = false ) : void
     {
-        if ( $only_crawlers && ! $this->get_crawler_detect()->isCrawler() ) {
+        if (
+            $this->get_query()->is_exists() ||
+            $only_crawlers && ! $this->get_crawler_detect()->isCrawler()
+        ) {
             return;
         }
 
