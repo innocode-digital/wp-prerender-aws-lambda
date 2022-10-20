@@ -29,28 +29,25 @@ class Integration implements IntegrationInterface
     {
         $this->plugin = $plugin;
 
-        Helpers::hook( 'innocode_prerender_callback', [ $this, 'flush' ], PHP_INT_MAX );
+        Helpers::hook( 'innocode_prerender_callback', [ $this, 'flush' ] );
     }
 
     /**
-     * @param Entry|null $entry
-     * @param string     $template_name
-     * @param string     $id
-     * @return Entry|null
+     * @param Entry  $entry
+     * @param string $template_name
+     * @param string $id
+     * @return void
      */
-    public function flush( ?Entry $entry, string $template_name, string $id ) : ?Entry
+    public function flush( Entry $entry, string $template_name, string $id ) : void
     {
         if (
             ! function_exists( 'batcache_clear_url' ) ||
-            ! ( $entry instanceof Entry ) ||
             null === ( $template = $this->get_plugin()->find_template( $template_name ) ) ||
             null === ( $url = $template->get_link( $id ) )
         ) {
-            return $entry;
+            return;
         }
 
         batcache_clear_url( $url );
-
-        return $entry;
     }
 }

@@ -4,7 +4,6 @@ namespace Innocode\Prerender\Integrations\FlushCache;
 
 use Innocode\Prerender\Interfaces\IntegrationInterface;
 use Innocode\Prerender\Plugin;
-use Innocode\Prerender\SecretsManager;
 
 class Integration implements IntegrationInterface
 {
@@ -16,7 +15,7 @@ class Integration implements IntegrationInterface
         $db = $plugin->get_db();
 
         $bump_html_version = [ $db->get_html_version(), 'bump' ];
-        $flush_secrets = [ SecretsManager::class, 'flush' ];
+        $flush_secrets = [ $plugin->get_secrets_manager(), 'flush' ];
         $clean_db = [ $db, 'drop_table' ];
 
         if ( function_exists( 'flush_cache_add_button' ) ) {

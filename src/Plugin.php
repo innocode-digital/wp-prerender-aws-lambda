@@ -4,18 +4,17 @@ namespace Innocode\Prerender;
 
 use Innocode\Prerender\Abstracts\AbstractTemplate;
 use Innocode\Prerender\Interfaces\IntegrationInterface;
-use Innocode\Prerender\Traits\DbTrait;
 use Innocode\Prerender\Templates\Author;
 use Innocode\Prerender\Templates\DateArchive;
 use Innocode\Prerender\Templates\Frontpage;
 use Innocode\Prerender\Templates\Post;
 use Innocode\Prerender\Templates\PostTypeArchive;
 use Innocode\Prerender\Templates\Term;
+use Innocode\SecretsManager\SecretsManager;
+use Jaybizzle\CrawlerDetect\CrawlerDetect;
 
 final class Plugin
 {
-    use DbTrait;
-
     const TEMPLATE_AUTHOR = 'author';
     const TEMPLATE_DATE_ARCHIVE = 'date_archive';
     const TEMPLATE_FRONTPAGE = 'frontpage';
@@ -27,6 +26,14 @@ final class Plugin
     const INTEGRATION_BATCACHE = 'batcache';
     const INTEGRATION_POLYLANG = 'polylang';
 
+    /**
+     * @var Db
+     */
+    private $db;
+    /**
+     * @var SecretsManager
+     */
+    private $secrets_manager;
     /**
      * @var Lambda
      */
@@ -43,6 +50,10 @@ final class Plugin
      * @var Query
      */
     private $query;
+    /**
+     * @var CrawlerDetect
+     */
+    private $crawler_detect;
     /**
      * @var AbstractTemplate[]
      */
@@ -61,18 +72,13 @@ final class Plugin
      */
     public function __construct( string $key, string $secret, string $region )
     {
-        $db = new Db();
-        $queue = new Queue();
-        $rest_controller = new RESTController();
-
-        $queue->set_db( $db );
-        $rest_controller->set_db( $db );
-
-        $this->db = $db;
+        $this->db = new Db();
+        $this->secrets_manager = new SecretsManager( 'prerender' );
         $this->lambda = new Lambda( $key, $secret, $region );
-        $this->queue = $queue;
-        $this->rest_controller = $rest_controller;
+        $this->queue = new Queue();
+        $this->rest_controller = new RESTController();
         $this->query = new Query();
+        $this->crawler_detect = new CrawlerDetect();
 
         /**
          * @note Order is important.
@@ -87,6 +93,22 @@ final class Plugin
         $this->integrations[ Plugin::INTEGRATION_FLUSH_CACHE ] = new Integrations\FlushCache\Integration();
         $this->integrations[ Plugin::INTEGRATION_BATCACHE ] = new Integrations\Batcache\Integration();
         $this->integrations[ Plugin::INTEGRATION_POLYLANG ] = new Integrations\Polylang\Integration();
+    }
+
+    /**
+     * @return Db
+     */
+    public function get_db() : Db
+    {
+        return $this->db;
+    }
+
+    /**
+     * @return SecretsManager
+     */
+    public function get_secrets_manager() : SecretsManager
+    {
+        return $this->secrets_manager;
     }
 
     /**
@@ -119,6 +141,14 @@ final class Plugin
     public function get_query() : Query
     {
         return $this->query;
+    }
+
+    /**
+     * @return CrawlerDetect
+     */
+    public function get_crawler_detect() : CrawlerDetect
+    {
+        return $this->crawler_detect;
     }
 
     /**
@@ -178,7 +208,7 @@ final class Plugin
         Helpers::hook( 'rest_api_init', [ $this->get_rest_controller(), 'register_routes' ] );
         Helpers::hook( 'wp_head', [ $this, 'print_scripts' ], 1 );
 
-        Helpers::hook( 'delete_expired_transients', [ SecretsManager::class, 'flush_expired' ] );
+        Helpers::hook( 'delete_expired_transients', [ $this->get_secrets_manager(), 'flush_expired' ] );
 
         $queue = $this->get_queue();
 
@@ -187,9 +217,7 @@ final class Plugin
         Helpers::hook( 'saved_term', [ $queue, 'update_term' ] );
         Helpers::hook( 'delete_term', [ $queue, 'delete_term' ] );
 
-        Helpers::hook( 'innocode_prerender_schedule', [ $this, 'clear_entry' ] );
         Helpers::hook( 'innocode_prerender', [ $this, 'invoke_lambda' ] );
-        Helpers::hook( 'innocode_prerender_callback', [ $this, 'save_entry' ] );
     }
 
     /**
@@ -200,16 +228,6 @@ final class Plugin
         foreach ( $this->get_integrations() as $integration ) {
             $integration->run( $this );
         }
-    }
-
-    /**
-     * @return void
-     */
-    public function init() : void
-    {
-        $this->get_rest_controller()->set_templates( array_map( function ( AbstractTemplate $template ) {
-            return $template->get_name();
-        }, $this->get_templates() ) );
     }
 
     /**
@@ -249,7 +267,7 @@ final class Plugin
             return;
         }
 
-        list( $is_secret_set, $secret ) = SecretsManager::init( $template_name, (string) $id );
+        list( $is_secret_set, $secret ) = $this->get_secrets_manager()->init( "$template_name:$id" );
 
         if ( ! $is_secret_set ) {
             return;
@@ -271,14 +289,13 @@ final class Plugin
     }
 
     /**
-     * @param Entry|null $entry
-     * @param string     $template_name
-     * @param string     $id
-     * @param string     $html
-     * @param string     $version
+     * @param string $template_name
+     * @param string $id
+     * @param string $html
+     * @param string $version
      * @return Entry|null
      */
-    public function save_entry( ?Entry $entry, string $template_name, string $id, string $html, string $version ) : ?Entry
+    public function save_entry( string $template_name, string $id, string $html, string $version ) : ?Entry
     {
         if (
             null === ( $template = $this->find_template( $template_name ) ) ||
@@ -299,10 +316,15 @@ final class Plugin
     }
 
     /**
+     * @param bool $only_crawlers
      * @return void
      */
-    public function render() : void
+    public function render( bool $only_crawlers = false ) : void
     {
+        if ( $only_crawlers && ! $this->get_crawler_detect()->isCrawler() ) {
+            return;
+        }
+
         foreach ( $this->get_templates() as $template ) {
             if ( $template->is_queried() ) {
                 echo $this->get_html( $template );
@@ -326,8 +348,7 @@ final class Plugin
 
         list( $type, $object_id ) = $type_id_pair;
 
-        $queue = $this->get_queue();
-        $db = $queue->get_db();
+        $db = $this->get_db();
         $html_version = $db->get_html_version();
 
         if (
@@ -337,14 +358,14 @@ final class Plugin
                 (
                     ! $entry->has_version() &&
                     null !== $entry->get_updated() &&
-                    time() <= $entry->get_updated()->getTimestamp() + SecretsManager::EXPIRATION
+                    time() <= $entry->get_updated()->getTimestamp() + $this->get_secrets_manager()->get_expiration()
                 )
             )
         ) {
             return $entry->get_html();
         }
 
-        $queue->schedule( $template->get_name(), $id );
+        $this->get_queue()->schedule( $template->get_name(), $id );
 
         return '';
     }
@@ -375,6 +396,6 @@ final class Plugin
     public function deactivate() : void
     {
         $this->get_db()->drop_table();
-        SecretsManager::flush();
+        $this->get_secrets_manager()->flush();
     }
 }
