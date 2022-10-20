@@ -204,7 +204,6 @@ final class Plugin
 
         Helpers::hook( 'plugins_loaded', [ $this, 'run_integrations' ] );
         Helpers::hook( 'init', [ $this->get_db(), 'init' ] );
-        Helpers::hook( 'init', [ $this, 'init' ] );
         Helpers::hook( 'rest_api_init', [ $this->get_rest_controller(), 'register_routes' ] );
         Helpers::hook( 'wp_head', [ $this, 'print_scripts' ], 1 );
 
