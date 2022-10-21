@@ -1,6 +1,6 @@
 {
     "name": "innocode-digital/wp-prerender-aws-lambda",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "type": "wordpress-muplugin",
     "description": "Generates HTML for client-side rendered content via AWS Lambda.",
     "license": "GPL-2.0+",
@@ -27,7 +27,10 @@
     "require": {
         "php": ">=7.1",
         "ext-json": "*",
-        "aws/aws-sdk-php": "^3.14"
+        "aws/aws-sdk-php": "^3.14",
+        "innocode-digital/wp-secrets-manager": "^1.0",
+        "innocode-digital/wp-version": "^1.0",
+        "jaybizzle/crawler-detect": "^1.2"
     },
     "autoload": {
         "psr-4": {

@@ -2,13 +2,10 @@
 
 namespace Innocode\Prerender;
 
-use Innocode\Prerender\Traits\DbTrait;
 use WP_Post;
 
 class Queue
 {
-    use DbTrait;
-
     /**
      * Updates Post/Page HTML.
      *
@@ -72,7 +69,7 @@ class Queue
     {
         do_action( 'innocode_prerender_pre_delete_post', $post_id );
 
-        if ( $this->get_db()->delete_entry( 'post', $post_id ) ) {
+        if ( innocode_prerender()->get_db()->delete_entry( 'post', $post_id ) ) {
             $this->update_post_related( $post_id );
         }
 
@@ -88,7 +85,7 @@ class Queue
     {
         do_action( 'innocode_prerender_pre_delete_term', $term_taxonomy_id );
 
-        if ( $this->get_db()->delete_entry( 'term', $term_taxonomy_id ) ) {
+        if ( innocode_prerender()->get_db()->delete_entry( 'term', $term_taxonomy_id ) ) {
             $this->update_term_related( $term_taxonomy_id );
         }
 
@@ -299,7 +296,7 @@ class Queue
             return;
         }
 
-        do_action( 'innocode_prerender_schedule', ...$args );
+        innocode_prerender()->clear_entry( $template, $id );
 
         wp_schedule_single_event( time(), 'innocode_prerender', $args );
     }

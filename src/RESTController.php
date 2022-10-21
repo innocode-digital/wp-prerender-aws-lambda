@@ -2,7 +2,7 @@
 
 namespace Innocode\Prerender;
 
-use Innocode\Prerender\Traits\DbTrait;
+use Innocode\Prerender\Abstracts\AbstractTemplate;
 use WP_Error;
 use WP_Http;
 use WP_REST_Controller;
@@ -12,13 +12,6 @@ use WP_REST_Server;
 
 class RESTController extends WP_REST_Controller
 {
-    use DbTrait;
-
-    /**
-     * @var array
-     */
-    protected $templates;
-
     /**
      * RESTController constructor.
      */
@@ -26,23 +19,6 @@ class RESTController extends WP_REST_Controller
     {
         $this->namespace = 'innocode/v1';
         $this->rest_base = 'prerender';
-    }
-
-    /**
-     * @param array $templates
-     * @return void
-     */
-    public function set_templates( array $templates ) : void
-    {
-        $this->templates = $templates;
-    }
-
-    /**
-     * @return array
-     */
-    public function get_templates() : array
-    {
-        return $this->templates;
     }
 
     /**
@@ -63,7 +39,9 @@ class RESTController extends WP_REST_Controller
                     'type'            => [
                         'description' => __( 'Type of the prerender.', 'innocode-prerender' ),
                         'type'        => 'string',
-                        'enum'        => $this->get_templates(),
+                        'enum'        => array_map( function ( AbstractTemplate $template ) {
+                            return $template->get_name();
+                        }, innocode_prerender()->get_templates() ),
                         'required'    => true,
                     ],
                     'id'              => [
@@ -105,7 +83,7 @@ class RESTController extends WP_REST_Controller
         $id = $request->get_param( 'id' );
         $secret = $request->get_param( 'secret' );
 
-        $secret_hash = SecretsManager::get( (string) $template, (string) $id );
+        $secret_hash = innocode_prerender()->get_secrets_manager()->get( "$template:$id" );
 
         if ( false === $secret_hash || ! wp_check_password( (string) $secret, $secret_hash ) ) {
             return new WP_Error(
@@ -139,15 +117,17 @@ class RESTController extends WP_REST_Controller
         $html = $request->get_param( 'html' );
         $version = $request->get_param( 'version' );
 
-        $entry = apply_filters( 'innocode_prerender_callback', null, $template, $id, $html, $version );
+        $entry = innocode_prerender()->save_entry( $template, $id, $html, $version );
 
         if ( ! ( $entry instanceof Entry ) ) {
             return new WP_Error(
-                'rest_innocode_prerender_invalid_callback',
-                __( 'There is no callback for such request.', 'innocode-prerender' ),
-                [ 'status' => WP_Http::BAD_REQUEST ]
+                'rest_innocode_prerender_entry_not_saved',
+                __( 'Prerender entry not saved.', 'innocode-prerender' ),
+                [ 'status' => WP_Http::INTERNAL_SERVER_ERROR ]
             );
         }
+
+        do_action( 'innocode_prerender_callback', $entry, $template, $id );
 
         return $this->prepare_item_for_response( $entry, $request );
     }
@@ -176,7 +156,9 @@ class RESTController extends WP_REST_Controller
         $template = $request->get_param( 'type' );
         $id = $request->get_param( 'id' );
 
-        SecretsManager::delete( $template, $id );
+        innocode_prerender()
+            ->get_secrets_manager()
+            ->delete( "$template:$id" );
 
         return $result;
     }
@@ -190,7 +172,7 @@ class RESTController extends WP_REST_Controller
      */
     public function validate_version( string $param ) : bool
     {
-        $html_version = $this->get_db()->get_html_version();
+        $html_version = innocode_prerender()->get_db()->get_html_version();
 
         return $html_version() == $param;
     }

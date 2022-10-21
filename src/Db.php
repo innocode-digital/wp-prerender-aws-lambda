@@ -2,6 +2,8 @@
 
 namespace Innocode\Prerender;
 
+use Innocode\Version\Version;
+
 class Db
 {
     const VERSION = '1.0.0';
